@@ -91,11 +91,13 @@ export default function App() {
     }
   };
 
-  const handleFinishWelcome = (selectedGoal) => {
+  const handleFinishWelcome = ({ selectedGoal, selectedDomain }) => {
     const updated = {
       ...appData,
-      goal: selectedGoal,
-      welcomed: true
+      goal: selectedGoal || appData.goal || 2,
+      userDomain: selectedDomain || appData.userDomain || 'swe_dsa',
+      welcomed: true,
+      dopamineXp: (appData.dopamineXp || 0) + 50
     };
     handleUpdateState(updated);
     setShowWelcome(false);
@@ -184,14 +186,16 @@ export default function App() {
             state={appData}
             onUpdateState={handleUpdateState}
             onLogout={handleLogout}
+            onOpenTutorial={() => setShowWelcome(true)}
           />
         </div>
       )}
 
-      {/* First-time Welcome Modal */}
+      {/* First-time Welcome & Domain Onboarding Tutorial Modal */}
       <WelcomeModal
         isOpen={showWelcome}
         initialGoal={appData.goal || 2}
+        initialDomain={appData.userDomain || 'swe_dsa'}
         onFinish={handleFinishWelcome}
       />
     </div>

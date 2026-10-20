@@ -7,6 +7,7 @@ import ScrapbookModal from './ScrapbookModal';
 import DayGoalModal from './DayGoalModal';
 import HabitTrackerModal from './HabitTrackerModal';
 import CustomSubjectModal from './CustomSubjectModal';
+import { DOMAINS } from './WelcomeModal';
 import { playSfx, setVolumeLevel } from '../utils/audio';
 import { triggerConfetti } from '../utils/confetti';
 import { getCurrentUser } from '../utils/api';
@@ -21,8 +22,10 @@ const SCENES = [
 ];
 
 const DAILY_CHALLENGES = [
+  // SWE & DSA
   {
     id: 'dsa_leetcode_medium',
+    domain: 'swe_dsa',
     title: 'The LeetCode Medium Gauntlet',
     desc: 'Solve 1 LeetCode Medium (or 2 Easy) problem. Analyze and write down both Time O(N) and Space O(1) complexity before submitting.',
     reward: '+60 Dopamine XP',
@@ -31,6 +34,7 @@ const DAILY_CHALLENGES = [
   },
   {
     id: 'dsa_tree_graph_drill',
+    domain: 'swe_dsa',
     title: 'Tree & Graph Traversal Drill',
     desc: 'Write a BFS, DFS, or Binary Tree Level Order traversal from scratch on a blank scratchpad without auto-complete or copying.',
     reward: '+50 Dopamine XP',
@@ -38,15 +42,8 @@ const DAILY_CHALLENGES = [
     icon: '🌳'
   },
   {
-    id: 'internship_ship_pr',
-    title: 'Ship Internship PR / Feature',
-    desc: 'Complete a clean git commit, write documentation/unit tests, or push a working feature/bugfix branch for your internship project.',
-    reward: '+65 Dopamine XP',
-    tag: 'Internship Impact',
-    icon: '🚀'
-  },
-  {
     id: 'dsa_complexity_crusher',
+    domain: 'swe_dsa',
     title: 'Complexity Crusher (O(N²) ➔ O(N))',
     desc: 'Take a brute-force approach you previously wrote and optimize it down using a HashMap, Two Pointers, or Sliding Window pattern.',
     reward: '+45 Dopamine XP',
@@ -54,39 +51,8 @@ const DAILY_CHALLENGES = [
     icon: '⚡'
   },
   {
-    id: 'mock_interview_aloud',
-    title: 'Mock Interview Voice Simulation',
-    desc: 'Pick any DSA problem and explain your algorithmic approach out loud as if explaining your trade-offs to a tech interviewer.',
-    reward: '+55 Dopamine XP',
-    tag: 'Interview Skills',
-    icon: '🎙️'
-  },
-  {
-    id: 'internship_edge_cases',
-    title: 'Production Edge-Case Vault',
-    desc: 'Test your internship code against 4 deliberate edge cases: null/empty input, boundary constraints, duplicates, and error handling.',
-    reward: '+40 Dopamine XP',
-    tag: 'Production Quality',
-    icon: '🛡️'
-  },
-  {
-    id: 'system_design_sketch',
-    title: 'System Design Architecture Blueprint',
-    desc: 'Sketch a high-level system diagram for a backend service (Database choice, Caching layer, REST/GraphQL API contracts, Latency).',
-    reward: '+55 Dopamine XP',
-    tag: 'System Design',
-    icon: '🏗️'
-  },
-  {
-    id: 'internship_code_refactor',
-    title: 'Senior-Level Code Refactoring',
-    desc: 'Refactor a cluttered 40+ line function in your internship project into clean, modular, self-documenting helper functions.',
-    reward: '+50 Dopamine XP',
-    tag: 'Clean Architecture',
-    icon: '📦'
-  },
-  {
     id: 'dsa_dp_recursion',
+    domain: 'swe_dsa',
     title: 'Dynamic Programming Recurrence Attack',
     desc: 'Draw out the state-transition table / recurrence formula for a DP problem (Memoization or 1D Tabulation) on paper before coding.',
     reward: '+65 Dopamine XP',
@@ -94,16 +60,180 @@ const DAILY_CHALLENGES = [
     icon: '🎯'
   },
   {
-    id: 'deep_flow_sprint',
-    title: 'Zero-Distraction 45m Code Lock-In',
-    desc: 'Complete 45 minutes of deep focused coding on your internship tickets or DSA problems without checking your phone or social media.',
+    id: 'system_design_sketch',
+    domain: 'swe_dsa',
+    title: 'System Design Architecture Blueprint',
+    desc: 'Sketch a high-level system diagram for a backend service (Database choice, Caching layer, REST/GraphQL API contracts, Latency).',
+    reward: '+55 Dopamine XP',
+    tag: 'System Design',
+    icon: '🏗️'
+  },
+
+  // AI & ML
+  {
+    id: 'aiml_paper_breakdown',
+    domain: 'ai_ml',
+    title: 'ArXiv Paper Deep-Dive & Summary',
+    desc: 'Read one foundational ML/AI paper (or arxiv summary) for 30 minutes and document its core loss function and architecture diagram.',
+    reward: '+60 Dopamine XP',
+    tag: 'AI Research',
+    icon: '🤖'
+  },
+  {
+    id: 'aiml_loss_math_drill',
+    domain: 'ai_ml',
+    title: 'Loss Function & Backprop Math',
+    desc: 'Derive Cross-Entropy Loss or Mean Squared Error gradients by hand on paper to strengthen your fundamental intuition.',
+    reward: '+50 Dopamine XP',
+    tag: 'ML Math',
+    icon: '📐'
+  },
+  {
+    id: 'aiml_eda_pipeline',
+    domain: 'ai_ml',
+    title: 'Data Cleaning & Feature Engineering',
+    desc: 'Load a raw dataset, handle missing values, visualize distributions with Seaborn/Matplotlib, and build 2 novel engineered features.',
+    reward: '+55 Dopamine XP',
+    tag: 'Data Science',
+    icon: '📊'
+  },
+  {
+    id: 'aiml_model_eval',
+    domain: 'ai_ml',
+    title: 'Model Evaluation & Metric Audit',
+    desc: 'Calculate Precision, Recall, F1, and ROC-AUC for your classifier. Spot false positives and analyze failure edge cases.',
+    reward: '+50 Dopamine XP',
+    tag: 'Evaluation',
+    icon: '🔬'
+  },
+
+  // Full-Stack & Web Dev
+  {
+    id: 'web_ship_feature_pr',
+    domain: 'web_dev',
+    title: 'Ship a Production-Ready Feature',
+    desc: 'Build, test, and commit a working frontend UI component or backend endpoint with error boundaries and clean git history.',
+    reward: '+65 Dopamine XP',
+    tag: 'Full-Stack Ship',
+    icon: '🚀'
+  },
+  {
+    id: 'web_api_optimization',
+    domain: 'web_dev',
+    title: 'REST / GraphQL Contract & Indexing',
+    desc: 'Optimize an API route: add database indexing, validate incoming payloads with Zod/Joi, and return standardized error responses.',
+    reward: '+50 Dopamine XP',
+    tag: 'Backend Arch',
+    icon: '🔌'
+  },
+  {
+    id: 'web_responsive_polish',
+    domain: 'web_dev',
+    title: 'Mobile-First Responsive Polish',
+    desc: 'Test your application layout across 3 viewports (360px, 768px, 1440px) and eliminate layout shifts or awkward wrapping.',
     reward: '+45 Dopamine XP',
-    tag: 'Flow State',
-    icon: '🔥'
+    tag: 'Frontend Polish',
+    icon: '📱'
+  },
+  {
+    id: 'web_refactor_cleanup',
+    domain: 'web_dev',
+    title: 'Refactor Spaghetti to Modular Hooks',
+    desc: 'Extract bloated component logic into clean custom hooks, separate presentation from state, and delete dead code.',
+    reward: '+50 Dopamine XP',
+    tag: 'Code Cleanliness',
+    icon: '📦'
+  },
+
+  // Academics & Exams
+  {
+    id: 'acad_active_recall_feynman',
+    domain: 'academics',
+    title: 'Feynman Technique & Active Recall',
+    desc: 'Pick one tough academic concept or theorem, close your notes, and explain it in plain simple words as if teaching a beginner.',
+    reward: '+55 Dopamine XP',
+    tag: 'Active Recall',
+    icon: '📚'
+  },
+  {
+    id: 'acad_past_paper_drill',
+    domain: 'academics',
+    title: 'Timed Past-Paper Question Sprint',
+    desc: 'Solve 3 previous-year exam problems or university problem sets strictly under exam time constraints with no textbook peeking.',
+    reward: '+60 Dopamine XP',
+    tag: 'Exam Sprint',
+    icon: '⏱️'
+  },
+  {
+    id: 'acad_formula_mindmap',
+    domain: 'academics',
+    title: 'Formula Derivation & Mindmap',
+    desc: 'Construct a single-page visual cheat sheet or formula mindmap connecting key theorems for your upcoming exams.',
+    reward: '+45 Dopamine XP',
+    tag: 'Synthesis',
+    icon: '🧠'
+  },
+
+  // UI/UX Design & Product
+  {
+    id: 'uiux_component_audit',
+    domain: 'ui_ux',
+    title: 'Figma Auto-Layout & Design System Audit',
+    desc: 'Create or audit 3 scalable UI components in Figma using auto-layout, consistent spacing tokens, and variant properties.',
+    reward: '+55 Dopamine XP',
+    tag: 'Design System',
+    icon: '🎨'
+  },
+  {
+    id: 'uiux_micro_interaction',
+    domain: 'ui_ux',
+    title: 'Micro-Interaction & Motion Design',
+    desc: 'Prototype a delightful button state, skeleton loading transition, or spring animation in Framer Motion or Figma smart animate.',
+    reward: '+50 Dopamine XP',
+    tag: 'Motion & UX',
+    icon: '✨'
+  },
+  {
+    id: 'uiux_heuristic_evaluation',
+    domain: 'ui_ux',
+    title: 'Heuristic Teardown & Case Study',
+    desc: 'Critique a popular web app against Nielsen Norman usability heuristics and sketch 2 high-impact UX improvements.',
+    reward: '+50 Dopamine XP',
+    tag: 'Product UX',
+    icon: '🔍'
+  },
+
+  // Job Search & Career
+  {
+    id: 'job_resume_metric_bullet',
+    domain: 'job_hunt',
+    title: 'Resume Metric Polish (Action + Impact)',
+    desc: 'Rewrite 3 resume bullet points using the Google XYZ formula: "Accomplished [X] as measured by [Y] by doing [Z]".',
+    reward: '+50 Dopamine XP',
+    tag: 'Resume Polish',
+    icon: '💼'
+  },
+  {
+    id: 'job_mock_interview_voice',
+    domain: 'job_hunt',
+    title: 'Behavioral STAR Story Drill',
+    desc: 'Record yourself answering "Tell me about a time you resolved a conflict or technical roadblock" using the STAR framework.',
+    reward: '+55 Dopamine XP',
+    tag: 'Interview Prep',
+    icon: '🎙️'
+  },
+  {
+    id: 'job_cold_outreach_portfolio',
+    domain: 'job_hunt',
+    title: 'Cold Outreach & Portfolio Touchup',
+    desc: 'Send 2 personalized LinkedIn/email coffee chat notes to engineers/managers and add a live demo link to your top project.',
+    reward: '+60 Dopamine XP',
+    tag: 'Career Outreach',
+    icon: '📬'
   }
 ];
 
-export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
+export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpenTutorial }) {
   const [now, setNow] = useState(new Date());
   const currentUser = getCurrentUser();
 
@@ -227,14 +357,24 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
     return { text: '🎯 Getting Started', color: 'text-[var(--mut)]' };
   }, [monthStats.completionRate]);
 
-  // Daily Dopamine Quest logic
+  // Domain selection and tailored Daily Dopamine Quest logic
+  const [showDomainModal, setShowDomainModal] = useState(false);
+  const currentDomainId = state.userDomain || 'swe_dsa';
+  const currentDomain = DOMAINS.find((d) => d.id === currentDomainId) || DOMAINS[0];
+
+  const domainChallenges = useMemo(() => {
+    const list = DAILY_CHALLENGES.filter((c) => c.domain === currentDomainId);
+    return list.length > 0 ? list : DAILY_CHALLENGES;
+  }, [currentDomainId]);
+
   const defaultTodayChallenge = useMemo(() => {
+    const seed = `${todayIso}_${currentDomainId}`;
     let hash = 0;
-    for (let i = 0; i < todayIso.length; i++) {
-      hash = (hash * 31 + todayIso.charCodeAt(i)) >>> 0;
+    for (let i = 0; i < seed.length; i++) {
+      hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
     }
-    return DAILY_CHALLENGES[hash % DAILY_CHALLENGES.length];
-  }, [todayIso]);
+    return domainChallenges[hash % domainChallenges.length];
+  }, [todayIso, currentDomainId, domainChallenges]);
 
   const activeChallengeData = useMemo(() => {
     if (state.dailyChallenge && state.dailyChallenge.date === todayIso) {
@@ -270,8 +410,9 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
 
   const handleRerollDailyChallenge = () => {
     playSfx('click', state.mute);
-    const otherChallenges = DAILY_CHALLENGES.filter((c) => c.id !== activeChallengeData.challenge.id);
-    const nextChallenge = otherChallenges[Math.floor(Math.random() * otherChallenges.length)];
+    const otherChallenges = domainChallenges.filter((c) => c.id !== activeChallengeData.challenge.id);
+    const pool = otherChallenges.length > 0 ? otherChallenges : domainChallenges;
+    const nextChallenge = pool[Math.floor(Math.random() * pool.length)];
 
     showToast(`🎲 Rerolled Mission: "${nextChallenge.title}"`);
     onUpdateState({
@@ -283,6 +424,18 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
         completedAt: null
       }
     });
+  };
+
+  const handleSelectDomain = (domainId) => {
+    playSfx('click', state.mute);
+    onUpdateState({
+      ...state,
+      userDomain: domainId,
+      dailyChallenge: state.dailyChallenge && state.dailyChallenge.completed ? state.dailyChallenge : null
+    });
+    setShowDomainModal(false);
+    const dom = DOMAINS.find((d) => d.id === domainId);
+    showToast(`🎯 Focus Domain switched to: ${dom ? dom.name : domainId}`);
   };
 
   // Timezone & Environmental Atmospheric Theme Engine
@@ -778,6 +931,19 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
                 </span>
               )}
             </button>
+
+            {/* Interactive Tutorial Tour Button */}
+            {onOpenTutorial && (
+              <button
+                type="button"
+                onClick={onOpenTutorial}
+                title="Interactive Feature Tour & Domain Setup"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/15 via-[var(--lamp)]/15 to-emerald-500/15 hover:border-[var(--lamp)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all border border-amber-500/30 hover:scale-105 active:scale-95 shadow-xs"
+              >
+                <span>💡</span>
+                <span className="hidden sm:inline">Tour</span>
+              </button>
+            )}
 
             {/* Scrapbook Icon */}
             <button
@@ -1534,6 +1700,21 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
                 <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
                   ⚡ DAILY DOPAMINE QUEST
                 </span>
+                <button
+                  type="button"
+                  onClick={() => setShowDomainModal(true)}
+                  title="Click to switch your focus domain"
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 cursor-pointer transition-transform hover:scale-105 active:scale-95 shadow-xs"
+                  style={{
+                    backgroundColor: `${currentDomain.color}20`,
+                    borderColor: `${currentDomain.color}60`,
+                    color: currentDomain.color
+                  }}
+                >
+                  <span>{currentDomain.icon}</span>
+                  <span>{currentDomain.shortName}</span>
+                  <span className="text-[9px] opacity-75">▾</span>
+                </button>
                 <span className="text-[10px] font-semibold text-[var(--mut)] px-2 py-0.5 rounded-md bg-[var(--surf2)] border border-[var(--line)]">
                   {activeChallengeData.challenge.tag}
                 </span>
@@ -1887,6 +2068,68 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
             >
               Resume focus
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Domain Switch Modal */}
+      {showDomainModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="w-full max-w-lg rounded-3xl bg-[var(--surf)] border border-[var(--line)] p-6 shadow-2xl relative">
+            <button
+              type="button"
+              onClick={() => setShowDomainModal(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[var(--surf2)] text-[var(--mut)] hover:text-[var(--ink)] flex items-center justify-center cursor-pointer text-sm"
+            >
+              ✕
+            </button>
+
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-2xl">🎯</span>
+              <div>
+                <h3 className="serif text-xl font-medium text-[var(--ink)]">Change Your Focus Domain</h3>
+                <p className="text-xs text-[var(--mut)]">Tailors your daily dopamine study missions & challenges</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 my-4">
+              {DOMAINS.map((domain) => {
+                const isSelected = currentDomainId === domain.id;
+                return (
+                  <button
+                    key={domain.id}
+                    type="button"
+                    onClick={() => handleSelectDomain(domain.id)}
+                    className={`p-3 rounded-2xl border text-left cursor-pointer transition-all flex flex-col justify-between ${
+                      isSelected
+                        ? 'border-[var(--lamp)] bg-[var(--lamp)]/10 shadow-sm ring-1 ring-[var(--lamp)]/40'
+                        : 'border-[var(--line)] bg-[var(--surf2)]/70 hover:border-[var(--mut)]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-2xl">{domain.icon}</span>
+                      {domain.badge && (
+                        <span className="text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-[var(--surf)] text-[var(--mut)] border border-[var(--line)]">
+                          {domain.badge}
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-semibold text-xs text-[var(--ink)]">{domain.name}</div>
+                    <div className="text-[10px] text-[var(--mut)] line-clamp-2 mt-0.5">{domain.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setShowDomainModal(false)}
+                className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-[var(--surf2)] text-[var(--ink)] hover:brightness-110 cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
