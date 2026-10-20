@@ -93,6 +93,20 @@ async function initDb() {
           console.error('Initial cloud seed error:', e);
         }
       }
+      // Ensure admin user exists in MongoDB Atlas
+      const adminUser = await UserModel.findOne({ username: 'admin' });
+      if (!adminUser) {
+        const salt = bcrypt.genSaltSync(10);
+        await UserModel.create({
+          id: 'u_admin',
+          username: 'admin',
+          passwordHash: bcrypt.hashSync('admin123', salt),
+          createdAt: new Date().toISOString(),
+          state: createDefaultState()
+        });
+        console.log('🛡️ Initialized admin account in MongoDB Atlas (username: admin, password: admin123)');
+      }
+
       return;
     } catch (err) {
       console.error('⚠️ MongoDB connection error, falling back to local file storage:', err.message);
