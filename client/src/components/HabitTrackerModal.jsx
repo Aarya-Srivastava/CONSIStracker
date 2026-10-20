@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { playSfx } from '../utils/audio';
 import { triggerConfetti } from '../utils/confetti';
 
@@ -108,7 +108,49 @@ export default function HabitTrackerModal({
     return { goalsMet, totalTarget, totalCompleted, completionRate };
   }, [habits, viewYear, viewMonth]);
 
+  const todayColumnRef = useRef(null);
+  const tableContainerRef = useRef(null);
+
+  // Auto-scroll horizontally to today when the modal opens or month changes
+  useEffect(() => {
+    if (isOpen && todayColumnRef.current) {
+      const timer = setTimeout(() => {
+        todayColumnRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center'
+        });
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, viewMonth, viewYear]);
+
   if (!isOpen) return null;
+
+  const scrollToStart = () => {
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+    }
+  };
+
+  const scrollToEnd = () => {
+    if (tableContainerRef.current) {
+      tableContainerRef.current.scrollTo({
+        left: tableContainerRef.current.scrollWidth,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const scrollToToday = () => {
+    if (todayColumnRef.current) {
+      todayColumnRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center'
+      });
+    }
+  };
 
   const handlePrevMonth = () => {
     if (viewMonth === 0) {
@@ -406,45 +448,49 @@ export default function HabitTrackerModal({
               </div>
             </div>
           ) : (
-            <div className="border border-[var(--line)] rounded-2xl overflow-hidden bg-[var(--surf)] shadow-sm">
-              <table className="w-full border-collapse text-xs">
+            <div
+              ref={tableContainerRef}
+              className="border border-[var(--line)] rounded-2xl overflow-x-auto bg-[var(--surf)] shadow-sm"
+            >
+              <table className="w-full min-w-[1440px] border-collapse text-xs">
                 <thead>
                   {/* Row 1: Weekday Names (MON, TUE, WED, ...) */}
                   <tr className="bg-[var(--surf2)] text-[var(--ink)] border-b border-[var(--line)]">
-                    <th className="sticky left-0 z-20 bg-[var(--surf2)] p-2.5 text-left font-semibold text-xs border-r border-[var(--line)] min-w-[200px] sm:min-w-[240px]">
+                    <th className="sticky left-0 z-20 bg-[var(--surf2)] p-2.5 text-left font-semibold text-xs border-r border-[var(--line)] shadow-[2px_0_6px_rgba(0,0,0,0.12)] min-w-[200px] sm:min-w-[240px]">
                       HABIT & MONTHLY GOAL
                     </th>
                     {monthDays.map((d) => (
                       <th
                         key={d.dayNum}
-                        className={`p-1.5 text-center font-bold text-[10px] sm:text-[11px] min-w-[32px] sm:min-w-[36px] border-r border-[var(--line)]/60 ${
+                        className={`p-1.5 text-center font-bold text-[10px] sm:text-[11px] min-w-[34px] sm:min-w-[38px] border-r border-[var(--line)]/60 ${
                           d.isToday ? 'bg-[var(--lamp)]/25 text-[var(--lamp)] font-extrabold' : 'text-[var(--mut)]'
                         }`}
                       >
                         {d.dayOfWeekName}
                       </th>
                     ))}
-                    <th className="p-2 text-center font-semibold text-[11px] min-w-[90px] bg-[var(--surf2)] text-[var(--mut)]">
+                    <th className="p-2 text-center font-semibold text-[11px] min-w-[100px] bg-[var(--surf2)] text-[var(--mut)]">
                       MONTHLY GOAL
                     </th>
                   </tr>
 
                   {/* Row 2: Day Numbers (1, 2, 3, ... 31) */}
                   <tr className="bg-[var(--surf2)]/70 text-[var(--ink)] border-b border-[var(--line)] font-semibold">
-                    <th className="sticky left-0 z-20 bg-[var(--surf2)] p-2 text-left text-[11px] text-[var(--mut)] border-r border-[var(--line)] font-normal">
+                    <th className="sticky left-0 z-20 bg-[var(--surf2)] p-2 text-left text-[11px] text-[var(--mut)] border-r border-[var(--line)] shadow-[2px_0_6px_rgba(0,0,0,0.12)] font-normal">
                       Target & Progress
                     </th>
                     {monthDays.map((d) => (
                       <th
                         key={d.dayNum}
-                        className={`p-1 text-center text-xs border-r border-[var(--line)]/60 ${
+                        ref={d.isToday ? todayColumnRef : null}
+                        className={`p-1 text-center text-xs border-r border-[var(--line)]/60 min-w-[34px] sm:min-w-[38px] ${
                           d.isToday ? 'bg-[var(--lamp)] text-[#1b1730] font-bold rounded-sm' : ''
                         }`}
                       >
                         {d.dayNum}
                       </th>
                     ))}
-                    <th className="p-1 text-center text-[10px] text-[var(--mut)] bg-[var(--surf2)] font-normal">
+                    <th className="p-1 text-center text-[10px] text-[var(--mut)] bg-[var(--surf2)] font-normal min-w-[100px]">
                       Target (Days)
                     </th>
                   </tr>
@@ -469,7 +515,7 @@ export default function HabitTrackerModal({
                         }`}
                       >
                         {/* Habit Title Column (Sticky) */}
-                        <td className="sticky left-0 z-10 bg-[var(--surf)] p-2.5 border-r border-[var(--line)] font-medium text-[var(--ink)]">
+                        <td className="sticky left-0 z-10 bg-[var(--surf)] p-2.5 border-r border-[var(--line)] shadow-[2px_0_6px_rgba(0,0,0,0.12)] font-medium text-[var(--ink)]">
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-1.5 min-w-0">
                               {/* Reorder Buttons */}
@@ -525,7 +571,7 @@ export default function HabitTrackerModal({
                           return (
                             <td
                               key={d.dayNum}
-                              className={`p-1 text-center border-r border-[var(--line)]/40 ${
+                              className={`p-1 text-center border-r border-[var(--line)]/40 min-w-[34px] sm:min-w-[38px] ${
                                 d.isToday ? 'bg-teal-500/10' : ''
                               }`}
                             >
@@ -546,7 +592,7 @@ export default function HabitTrackerModal({
                         })}
 
                         {/* Monthly Goal Target Column */}
-                        <td className="p-2 text-center bg-[var(--surf2)]/40 border-l border-[var(--line)]">
+                        <td className="p-2 text-center bg-[var(--surf2)]/40 border-l border-[var(--line)] min-w-[100px]">
                           <div className="flex flex-col items-center">
                             <span
                               className="font-bold text-xs"
@@ -570,7 +616,7 @@ export default function HabitTrackerModal({
 
                   {/* Summary Footer Row */}
                   <tr className="bg-[var(--surf2)]/70 text-[var(--ink)] font-semibold border-t border-[var(--line)]">
-                    <td className="sticky left-0 z-10 bg-[var(--surf2)] p-2.5 text-left border-r border-[var(--line)] text-xs text-[var(--mut)]">
+                    <td className="sticky left-0 z-10 bg-[var(--surf2)] p-2.5 text-left border-r border-[var(--line)] shadow-[2px_0_6px_rgba(0,0,0,0.12)] text-xs text-[var(--mut)]">
                       Total Tasks Done
                     </td>
                     {monthDays.map((d) => {
@@ -581,7 +627,7 @@ export default function HabitTrackerModal({
                       return (
                         <td
                           key={d.dayNum}
-                          className={`p-1.5 text-center text-xs font-bold border-r border-[var(--line)]/40 ${
+                          className={`p-1.5 text-center text-xs font-bold border-r border-[var(--line)]/40 min-w-[34px] sm:min-w-[38px] ${
                             d.isToday ? 'bg-teal-500/20 text-teal-300' : ''
                           }`}
                         >
@@ -597,7 +643,7 @@ export default function HabitTrackerModal({
                         </td>
                       );
                     })}
-                    <td className="p-2 text-center bg-[var(--surf2)] text-xs font-bold text-emerald-400">
+                    <td className="p-2 text-center bg-[var(--surf2)] text-xs font-bold text-emerald-400 min-w-[100px]">
                       {monthStats.goalsMet} Goals
                     </td>
                   </tr>
@@ -608,7 +654,7 @@ export default function HabitTrackerModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="p-3 sm:p-4 border-t border-[var(--line)] bg-[var(--surf)] flex items-center justify-between text-xs text-[var(--mut)] flex-wrap gap-2">
+        <div className="p-3 sm:p-4 border-t border-[var(--line)] bg-[var(--surf)] flex items-center justify-between text-xs text-[var(--mut)] flex-wrap gap-3">
           <div className="flex items-center gap-4 text-xs text-[var(--mut)]">
             <span className="flex items-center gap-1.5">
               <span className="w-4 h-4 rounded-md bg-emerald-500 inline-flex items-center justify-center text-white text-[10px] font-bold">✓</span>
@@ -616,8 +662,37 @@ export default function HabitTrackerModal({
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-4 h-4 rounded-md border border-[var(--line)] bg-[var(--surf)] inline-block"></span>
-              <span>Tap any day to toggle completion</span>
+              <span>Tap any day to toggle</span>
             </span>
+          </div>
+
+          {/* Quick Horizontal Scroll Navigator */}
+          <div className="flex items-center gap-1.5 bg-[var(--surf2)] p-1 rounded-xl border border-[var(--line)]">
+            <span className="text-[10px] font-semibold text-[var(--mut)] px-2">Scroll:</span>
+            <button
+              type="button"
+              onClick={scrollToStart}
+              className="px-2.5 py-1 rounded-lg bg-[var(--surf)] hover:bg-[var(--line)] text-[var(--ink)] text-xs font-medium cursor-pointer transition-colors"
+              title="Scroll to beginning of month (Days 1–15)"
+            >
+              ◀ Days 1–15
+            </button>
+            <button
+              type="button"
+              onClick={scrollToToday}
+              className="px-2.5 py-1 rounded-lg bg-[var(--lamp)]/20 hover:bg-[var(--lamp)]/30 text-[var(--lamp)] text-xs font-semibold cursor-pointer transition-colors flex items-center gap-1"
+              title="Scroll to today"
+            >
+              <span>Today ({now.getDate()})</span>
+            </button>
+            <button
+              type="button"
+              onClick={scrollToEnd}
+              className="px-2.5 py-1 rounded-lg bg-[var(--surf)] hover:bg-[var(--line)] text-[var(--ink)] text-xs font-medium cursor-pointer transition-colors"
+              title="Scroll to end of month (Days 16–31)"
+            >
+              Days 16–31 ▶
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
