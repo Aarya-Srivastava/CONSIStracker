@@ -333,10 +333,22 @@ app.post('/api/tags', authenticateToken, async (req, res) => {
 // ---------------- STATIC PRODUCTION ASSETS (FULL-STACK UNIFIED) ----------------
 const CLIENT_DIST = path.join(__dirname, '../client/dist');
 if (fs.existsSync(CLIENT_DIST)) {
-  app.use(express.static(CLIENT_DIST));
-  // Universal SPA fallback for Express 5
+  app.use(express.static(CLIENT_DIST, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('index.html')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+    }
+  }));
+
+  // Universal SPA fallback for Express
   app.use((req, res, next) => {
     if (req.method === 'GET' && !req.path.startsWith('/api')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
       return res.sendFile(path.join(CLIENT_DIST, 'index.html'));
     }
     next();

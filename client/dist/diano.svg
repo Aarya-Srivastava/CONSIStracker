@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#140d24" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <!-- Background circle with soft glow -->
+  <circle cx="32" cy="32" r="30" fill="#1b1730" stroke="#f0b25a" stroke-width="2"/>
+  
+  <!-- Diano Mascot -->
+  <g transform="translate(6, 6)" filter="url(#shadow)">
+    <!-- Spikes -->
+    <path d="M26 6 Q29 1 33 6 Z" fill="#15803d" stroke="#26170c" stroke-width="1.5"/>
+    <path d="M33 9 Q37 4 39 11 Z" fill="#15803d" stroke="#26170c" stroke-width="1.5"/>
+    <path d="M38 16 Q42 13 41 20 Z" fill="#15803d" stroke="#26170c" stroke-width="1.5"/>
+    <path d="M38 23 Q41 22 37 28 Z" fill="#15803d" stroke="#26170c" stroke-width="1.5"/>
+    
+    <!-- Tail -->
+    <path d="M30 36 C38 37 40 43 32 44 Z" fill="#74f27a" stroke="#26170c" stroke-width="1.5"/>
+    <!-- Feet -->
+    <ellipse cx="20" cy="42" rx="4" ry="3.5" fill="#74f27a" stroke="#26170c" stroke-width="1.5"/>
+    <ellipse cx="30" cy="42" rx="4" ry="3.5" fill="#74f27a" stroke="#26170c" stroke-width="1.5"/>
+    <!-- Body & Head -->
+    <path d="M19 32 C17 38 18 43 25 43 C33 43 34 38 31 32 Z" fill="#74f27a" stroke="#26170c" stroke-width="1.5"/>
+    <ellipse cx="25" cy="22" rx="14" ry="13" fill="#74f27a" stroke="#26170c" stroke-width="1.5"/>
+    
+    <!-- Belly spot / highlight -->
+    <ellipse cx="20" cy="18" rx="5" ry="3" fill="#b9ffb9" opacity="0.6" transform="rotate(-20 20 18)"/>
+    
+    <!-- Blush Cheeks -->
+    <ellipse cx="15" cy="26" rx="2" ry="1.2" fill="#fb7185"/>
+    <ellipse cx="35" cy="26" rx="2" ry="1.2" fill="#fb7185"/>
+    
+    <!-- Cute Eyes -->
+    <circle cx="18" cy="23" r="2.2" fill="#26170c"/>
+    <circle cx="32" cy="23" r="2.2" fill="#26170c"/>
+    <circle cx="18.8" cy="22.2" r="0.8" fill="#ffffff"/>
+    <circle cx="32.8" cy="22.2" r="0.8" fill="#ffffff"/>
+    
+    <!-- Smile -->
+    <path d="M22 26 Q25 28.5 28 26" fill="none" stroke="#26170c" stroke-width="1.2" stroke-linecap="round"/>
+    
+    <!-- Tiny Hands -->
+    <ellipse cx="19" cy="34" rx="2.5" ry="3.5" fill="#74f27a" stroke="#26170c" stroke-width="1" transform="rotate(15 19 34)"/>
+    <ellipse cx="31" cy="34" rx="2.5" ry="3.5" fill="#74f27a" stroke="#26170c" stroke-width="1" transform="rotate(-15 31 34)"/>
+  </g>
+</svg>
