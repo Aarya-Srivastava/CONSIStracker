@@ -31,6 +31,7 @@ export default function App() {
   const loadUserData = async () => {
     const data = await api.getState();
     setAppData(data);
+    return data;
   };
 
   useEffect(() => {
@@ -75,10 +76,10 @@ export default function App() {
 
   // Transition from Phase 2 to Phase 3 (when password verified)
   const handleUnlockSuccess = async () => {
-    await loadUserData();
+    const data = await loadUserData();
     setPhase(3);
     // Show welcome modal if first time visit
-    if (!appData.welcomed) {
+    if (data && !data.welcomed) {
       setTimeout(() => setShowWelcome(true), 600);
     }
   };

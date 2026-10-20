@@ -636,7 +636,7 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
               </span>
               <span className="text-xs text-[var(--mut)] mt-1">of {todayGoal}h today</span>
               <span className="text-xs font-semibold text-[var(--lamp)] mt-2 flex items-center gap-1">
-                Start {selectedTag.name} session
+                Start {selectedTag ? `${selectedTag.name} ` : ''}session
               </span>
             </div>
           </button>
@@ -857,7 +857,7 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
                             width="44"
                             height={segHeight}
                             rx={tIdx === tagKeys.length - 1 ? 8 : 2}
-                            fill={d.tags[tName].color}
+                            fill={d.tags[tName]?.color || '#94a3b8'}
                             opacity={d.isToday ? 1 : 0.85}
                           />
                         );
