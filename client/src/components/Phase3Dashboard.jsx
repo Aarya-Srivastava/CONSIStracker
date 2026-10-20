@@ -617,11 +617,16 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
   };
 
   const endTimer = (verifiedSeconds) => {
-    playSfx('end', state.mute);
+    const s = Math.floor(verifiedSeconds);
+    // Play celebratory end fanfare for meaningful focus, or gentle beep for quick check
+    if (s >= 60) {
+      playSfx('end', state.mute);
+    } else {
+      playSfx('beep', state.mute);
+    }
+
     setTimerRunning(false);
     setShowTimerModal(false);
-
-    const s = Math.floor(verifiedSeconds);
     setLastSessionSec(s);
 
     if (s > 0) {
@@ -640,7 +645,13 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
         ...state,
         sessions: [...(state.sessions || []), newSession]
       });
-      showToast(`${Math.max(1, Math.round(s / 60))}m logged${selectedTag ? ` for ${selectedTag.name}` : ''}`);
+
+      if (s < 60) {
+        showToast(`${s}s logged · Push for 15m+ to build real momentum!`);
+      } else {
+        const m = Math.round(s / 60);
+        showToast(`${m}m logged${selectedTag ? ` for ${selectedTag.name}` : ''}`);
+      }
     }
 
     setShowStairsModal(true);
@@ -1987,6 +1998,10 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
         seconds={lastSessionSec}
         distractions={sessionDistractions}
         onClose={() => setShowStairsModal(false)}
+        onResume={() => {
+          setShowStairsModal(false);
+          startTimer();
+        }}
       />
 
       <EveningRitualModal
