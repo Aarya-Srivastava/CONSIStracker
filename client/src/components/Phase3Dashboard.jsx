@@ -324,6 +324,15 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
   const [chartView, setChartView] = useState('total'); // 'total' | 'subjects'
   const [bouncingHabitId, setBouncingHabitId] = useState(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [adminStats, setAdminStats] = useState(null);
+
+  useEffect(() => {
+    if (currentUser?.username?.toLowerCase() === 'admin') {
+      api.getSiteStats().then((res) => {
+        if (res && res.success && res.stats) setAdminStats(res.stats);
+      });
+    }
+  }, [currentUser]);
 
   // Habit Monthly Statistics
   const monthStats = useMemo(() => {
@@ -974,11 +983,16 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
               <button
                 type="button"
                 onClick={() => setShowFeedbackModal(true)}
-                title="Admin Feedback Vault (View all user submissions)"
+                title={`Admin Dashboard & Site Analytics (${adminStats ? adminStats.totalVisits + ' total visits, ' + adminStats.todayVisits + ' today' : 'Click to view'})`}
                 className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 hover:border-purple-400 text-xs font-bold text-purple-300 cursor-pointer transition-all border border-purple-500/40 hover:scale-105 active:scale-95 shadow-xs"
               >
                 <span>🛡️</span>
                 <span>Admin</span>
+                {adminStats && (
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-400/20 text-purple-200 border border-purple-400/30">
+                    👁️ {adminStats.totalVisits}
+                  </span>
+                )}
               </button>
             )}
 

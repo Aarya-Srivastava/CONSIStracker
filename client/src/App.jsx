@@ -36,6 +36,7 @@ export default function App() {
 
   useEffect(() => {
     loadUserData();
+    api.recordVisit();
   }, []);
 
   // Sync state changes with backend & local storage

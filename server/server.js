@@ -14,6 +14,8 @@ const {
   createFeedback,
   getAllFeedbacks,
   deleteFeedback,
+  recordVisit,
+  getSiteStats,
   DEFAULT_TAGS
 } = require('./db');
 
@@ -220,6 +222,28 @@ app.delete('/api/feedback/:id', async (req, res) => {
     return res.json({ success: true, message: 'Feedback deleted' });
   } catch (err) {
     return res.status(500).json({ success: false, message: 'Could not delete feedback' });
+  }
+});
+
+// ---------------- WEBSITE VISIT ANALYTICS ROUTES ----------------
+
+// Record page / app visit
+app.post('/api/analytics/visit', async (req, res) => {
+  try {
+    const stats = await recordVisit();
+    return res.json({ success: true, stats });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Could not record visit' });
+  }
+});
+
+// Get site stats (for admin dashboard)
+app.get('/api/analytics/stats', async (req, res) => {
+  try {
+    const stats = await getSiteStats();
+    return res.json({ success: true, stats });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Could not fetch site stats' });
   }
 });
 

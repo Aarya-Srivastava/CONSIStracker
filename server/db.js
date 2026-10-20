@@ -66,6 +66,18 @@ const FeedbackSchema = new mongoose.Schema(
 
 const FeedbackModel = mongoose.models.Feedback || mongoose.model('Feedback', FeedbackSchema);
 
+const StatsSchema = new mongoose.Schema(
+  {
+    key: { type: String, default: 'site_stats', unique: true },
+    totalVisits: { type: Number, default: 0 },
+    todayVisits: { type: Number, default: 0 },
+    lastVisitDate: { type: String, default: () => new Date().toISOString().slice(0, 10) }
+  },
+  { minimize: false }
+);
+
+const StatsModel = mongoose.models.Stats || mongoose.model('Stats', StatsSchema);
+
 let isMongoConnected = false;
 
 async function initDb() {
@@ -174,9 +186,10 @@ function readLocalDb() {
     const parsed = JSON.parse(raw);
     if (!parsed.feedbacks) parsed.feedbacks = [];
     if (!parsed.users) parsed.users = {};
+    if (!parsed.stats) parsed.stats = { totalVisits: 0, todayVisits: 0, lastVisitDate: '' };
     return parsed;
   } catch (err) {
-    return { users: {}, feedbacks: [] };
+    return { users: {}, feedbacks: [], stats: { totalVisits: 0, todayVisits: 0, lastVisitDate: '' } };
   }
 }
 
@@ -328,6 +341,66 @@ async function deleteFeedback(id) {
   return true;
 }
 
+// ---------------- WEBSITE VISIT ANALYTICS ----------------
+async function recordVisit() {
+  const today = new Date().toISOString().slice(0, 10);
+  if (isMongoConnected) {
+    let stats = await StatsModel.findOne({ key: 'site_stats' });
+    if (!stats) {
+      stats = await StatsModel.create({
+        key: 'site_stats',
+        totalVisits: 1,
+        todayVisits: 1,
+        lastVisitDate: today
+      });
+      return stats.toObject();
+    }
+    const isNewDay = stats.lastVisitDate !== today;
+    stats.totalVisits = (stats.totalVisits || 0) + 1;
+    stats.todayVisits = isNewDay ? 1 : (stats.todayVisits || 0) + 1;
+    stats.lastVisitDate = today;
+    await stats.save();
+    return stats.toObject();
+  }
+
+  const db = readLocalDb();
+  db.stats = db.stats || { totalVisits: 0, todayVisits: 0, lastVisitDate: today };
+  const isNewDay = db.stats.lastVisitDate !== today;
+  db.stats.totalVisits = (db.stats.totalVisits || 0) + 1;
+  db.stats.todayVisits = isNewDay ? 1 : (db.stats.todayVisits || 0) + 1;
+  db.stats.lastVisitDate = today;
+  writeLocalDb(db);
+  return db.stats;
+}
+
+async function getSiteStats() {
+  const today = new Date().toISOString().slice(0, 10);
+  let totalVisits = 0;
+  let todayVisits = 0;
+  let totalUsers = 0;
+  let totalFeedbacks = 0;
+
+  if (isMongoConnected) {
+    const stats = await StatsModel.findOne({ key: 'site_stats' }).lean();
+    if (stats) {
+      totalVisits = stats.totalVisits || 0;
+      todayVisits = stats.lastVisitDate === today ? (stats.todayVisits || 0) : 0;
+    }
+    totalUsers = await UserModel.countDocuments();
+    totalFeedbacks = await FeedbackModel.countDocuments();
+  } else {
+    const db = readLocalDb();
+    if (db.stats) {
+      totalVisits = db.stats.totalVisits || 0;
+      todayVisits = db.stats.lastVisitDate === today ? (db.stats.todayVisits || 0) : 0;
+    }
+    totalUsers = Object.keys(db.users || {}).length;
+    totalFeedbacks = (db.feedbacks || []).length;
+  }
+
+  return { totalVisits, todayVisits, totalUsers, totalFeedbacks };
+}
+
 module.exports = {
   initDb,
   findUserByUsername,
@@ -338,5 +411,7 @@ module.exports = {
   createFeedback,
   getAllFeedbacks,
   deleteFeedback,
+  recordVisit,
+  getSiteStats,
   DEFAULT_TAGS
 };

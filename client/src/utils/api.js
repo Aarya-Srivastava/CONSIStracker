@@ -278,5 +278,28 @@ export const api = {
     } catch (err) {
       return { success: false };
     }
+  },
+
+  // Record site visit
+  async recordVisit() {
+    try {
+      const res = await fetch(`${API_BASE}/analytics/visit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      return await res.json();
+    } catch (err) {
+      return { success: false };
+    }
+  },
+
+  // Get site stats (admin)
+  async getSiteStats() {
+    try {
+      const res = await fetch(`${API_BASE}/analytics/stats`);
+      return await res.json();
+    } catch (err) {
+      return { success: false, stats: { totalVisits: 0, todayVisits: 0, totalUsers: 0, totalFeedbacks: 0 } };
+    }
   }
 };

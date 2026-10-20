@@ -32,8 +32,9 @@ export default function FeedbackModal({ isOpen, onClose, showToast, isMuted }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSent, setIsSent] = useState(false);
 
-  // Admin feedbacks list
+  // Admin feedbacks & site stats
   const [feedbacks, setFeedbacks] = useState([]);
+  const [stats, setStats] = useState({ totalVisits: 0, todayVisits: 0, totalUsers: 0, totalFeedbacks: 0 });
   const [isLoadingFeedbacks, setIsLoadingFeedbacks] = useState(false);
 
   useEffect(() => {
@@ -41,20 +42,26 @@ export default function FeedbackModal({ isOpen, onClose, showToast, isMuted }) {
       setIsSent(false);
       setMessage('');
       if (isAdmin) {
-        loadFeedbacks();
+        loadAdminData();
       }
     }
   }, [isOpen, isAdmin]);
 
-  const loadFeedbacks = async () => {
+  const loadAdminData = async () => {
     setIsLoadingFeedbacks(true);
     try {
-      const res = await api.getFeedbacks();
-      if (res.success && Array.isArray(res.feedbacks)) {
-        setFeedbacks(res.feedbacks);
+      const [fbRes, statsRes] = await Promise.all([
+        api.getFeedbacks(),
+        api.getSiteStats()
+      ]);
+      if (fbRes.success && Array.isArray(fbRes.feedbacks)) {
+        setFeedbacks(fbRes.feedbacks);
+      }
+      if (statsRes.success && statsRes.stats) {
+        setStats(statsRes.stats);
       }
     } catch (e) {
-      console.error('Could not load feedbacks:', e);
+      console.error('Could not load admin data:', e);
     } finally {
       setIsLoadingFeedbacks(false);
     }
@@ -78,7 +85,7 @@ export default function FeedbackModal({ isOpen, onClose, showToast, isMuted }) {
         playSfx('celebrate', isMuted);
         setIsSent(true);
         if (showToast) showToast('💖 Thank you! Feedback sent directly to admin.');
-        if (isAdmin) loadFeedbacks();
+        if (isAdmin) loadAdminData();
       } else {
         if (showToast) showToast(res.message || 'Could not send feedback');
       }
@@ -146,7 +153,7 @@ export default function FeedbackModal({ isOpen, onClose, showToast, isMuted }) {
                   type="button"
                   onClick={() => {
                     setActiveTab('admin');
-                    loadFeedbacks();
+                    loadAdminData();
                   }}
                   className={`px-3 py-1 rounded-full font-semibold transition-all cursor-pointer ${
                     activeTab === 'admin' ? 'bg-[var(--lamp)] text-[#1b1730]' : 'text-[var(--mut)] hover:text-[var(--ink)]'
@@ -169,20 +176,59 @@ export default function FeedbackModal({ isOpen, onClose, showToast, isMuted }) {
         {/* Content Body */}
         <div className="p-5 sm:p-6 overflow-y-auto max-h-[70vh]">
           {activeTab === 'admin' && isAdmin ? (
-            /* ADMIN VIEW: LIST OF ALL USER FEEDBACKS */
+            /* ADMIN VIEW: ANALYTICS & USER FEEDBACKS */
             <div className="space-y-4">
+              {/* Website Visit & System Analytics Bar */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-2xl bg-gradient-to-br from-[var(--surf2)] to-[var(--surf)] border border-[var(--line)] shadow-inner">
+                <div className="flex flex-col p-2.5 rounded-xl bg-[var(--surf)]/90 border border-[var(--line)]/60 text-center shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--mut)]">Total Visits</span>
+                  <div className="text-xl sm:text-2xl font-bold text-[var(--lamp)] mt-0.5 flex items-center justify-center gap-1">
+                    <span>👁️</span>
+                    <span>{stats.totalVisits || 0}</span>
+                  </div>
+                  <span className="text-[9px] text-[var(--mut)]">site loads</span>
+                </div>
+
+                <div className="flex flex-col p-2.5 rounded-xl bg-[var(--surf)]/90 border border-[var(--line)]/60 text-center shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--mut)]">Today's Visits</span>
+                  <div className="text-xl sm:text-2xl font-bold text-emerald-400 mt-0.5 flex items-center justify-center gap-1">
+                    <span>📈</span>
+                    <span>{stats.todayVisits || 0}</span>
+                  </div>
+                  <span className="text-[9px] text-emerald-400/80 font-medium">active today</span>
+                </div>
+
+                <div className="flex flex-col p-2.5 rounded-xl bg-[var(--surf)]/90 border border-[var(--line)]/60 text-center shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--mut)]">Registered Users</span>
+                  <div className="text-xl sm:text-2xl font-bold text-cyan-400 mt-0.5 flex items-center justify-center gap-1">
+                    <span>👥</span>
+                    <span>{stats.totalUsers || 0}</span>
+                  </div>
+                  <span className="text-[9px] text-[var(--mut)]">accounts</span>
+                </div>
+
+                <div className="flex flex-col p-2.5 rounded-xl bg-[var(--surf)]/90 border border-[var(--line)]/60 text-center shadow-xs">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--mut)]">Feedbacks</span>
+                  <div className="text-xl sm:text-2xl font-bold text-rose-400 mt-0.5 flex items-center justify-center gap-1">
+                    <span>💬</span>
+                    <span>{feedbacks.length}</span>
+                  </div>
+                  <span className="text-[9px] text-[var(--mut)]">user reviews</span>
+                </div>
+              </div>
+
               <div className="flex items-center justify-between pb-2 border-b border-[var(--line)]">
                 <div className="text-xs font-semibold text-[var(--ink)]">
-                  Total Submissions: <span className="text-[var(--lamp)] font-bold">{feedbacks.length}</span>
+                  Feedback Submissions: <span className="text-[var(--lamp)] font-bold">{feedbacks.length}</span>
                 </div>
                 <button
                   type="button"
-                  onClick={loadFeedbacks}
+                  onClick={loadAdminData}
                   disabled={isLoadingFeedbacks}
-                  className="text-xs text-[var(--lamp)] hover:underline cursor-pointer flex items-center gap-1"
+                  className="text-xs text-[var(--lamp)] hover:underline cursor-pointer flex items-center gap-1 font-medium"
                 >
                   <span>🔄</span>
-                  <span>{isLoadingFeedbacks ? 'Refreshing...' : 'Refresh List'}</span>
+                  <span>{isLoadingFeedbacks ? 'Refreshing...' : 'Refresh All Data'}</span>
                 </button>
               </div>
 
