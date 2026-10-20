@@ -72,5 +72,10 @@ export function playSfx(type, isMuted = false) {
     tone(147, 0.5, 3, 0.04, isMuted);
   } else if (type === 'beep') {
     tone(523, 0, 0.8, 0.05, isMuted);
+  } else if (type === 'check') {
+    tone(587, 0, 0.12, 0.05, isMuted);
+    tone(880, 0.08, 0.2, 0.05, isMuted);
+  } else if (type === 'celebrate') {
+    [523, 659, 784, 1046].forEach((f, i) => tone(f, i * 0.1, 0.35, 0.05, isMuted));
   }
 }

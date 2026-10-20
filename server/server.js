@@ -163,8 +163,11 @@ app.get('/api/data', authenticateToken, (req, res) => {
   if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
   const state = user.state || {};
-  if (!state.tags || state.tags.length === 0) {
-    state.tags = DEFAULT_TAGS;
+  if (!Array.isArray(state.tags)) {
+    state.tags = [];
+  }
+  if (!Array.isArray(state.habits)) {
+    state.habits = [];
   }
   res.json(state);
 });

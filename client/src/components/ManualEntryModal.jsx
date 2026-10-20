@@ -4,17 +4,25 @@ import { DEFAULT_TAGS } from '../utils/api';
 export default function ManualEntryModal({
   isOpen,
   sessions = [],
-  tags = DEFAULT_TAGS,
+  tags = [],
   onClose,
   onSave,
-  onDeleteSession
+  onDeleteSession,
+  onOpenCustomSubjects
 }) {
   const todayIso = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(todayIso);
   const [hours, setHours] = useState(1);
   const [minutes, setMinutes] = useState(0);
-  const [selectedTag, setSelectedTag] = useState(tags[0] || DEFAULT_TAGS[0]);
+  const [selectedTag, setSelectedTag] = useState(tags[0] || null);
   const [note, setNote] = useState('');
+
+  // Keep selectedTag synced if tags change
+  React.useEffect(() => {
+    if (tags.length > 0 && (!selectedTag || !tags.some((t) => t.id === selectedTag.id))) {
+      setSelectedTag(tags[0]);
+    }
+  }, [tags]);
 
   if (!isOpen) return null;
 
@@ -31,14 +39,17 @@ export default function ManualEntryModal({
       return;
     }
 
+    const tagName = selectedTag ? selectedTag.name : 'Focus';
+    const tagColor = selectedTag ? selectedTag.color : '#94a3b8';
+
     onSave({
       id: 'm' + Date.now(),
       date,
       sec: totalSec,
       type: 'manual',
-      tag: selectedTag.name,
-      color: selectedTag.color,
-      note: note.trim() || `${selectedTag.name} study`
+      tag: tagName,
+      color: tagColor,
+      note: note.trim() || `${tagName} study`
     });
     setNote('');
   };
@@ -89,10 +100,22 @@ export default function ManualEntryModal({
 
           {/* Subject / Category Tag Selector */}
           <div>
-            <label className="block text-xs text-[var(--mut)] mb-1.5">Subject / Category</label>
-            <div className="flex gap-1.5 flex-wrap">
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs text-[var(--mut)]">Subject / Category</label>
+              {onOpenCustomSubjects && (
+                <button
+                  type="button"
+                  onClick={onOpenCustomSubjects}
+                  className="text-xs text-[var(--lamp)] hover:underline cursor-pointer flex items-center gap-1"
+                >
+                  <span>+</span> Manage Subjects
+                </button>
+              )}
+            </div>
+
+            <div className="flex gap-1.5 flex-wrap items-center">
               {tags.map((t) => {
-                const isSelected = selectedTag.id === t.id || selectedTag.name === t.name;
+                const isSelected = selectedTag && (selectedTag.id === t.id || selectedTag.name === t.name);
                 return (
                   <button
                     key={t.id || t.name}
@@ -118,6 +141,21 @@ export default function ManualEntryModal({
                   </button>
                 );
               })}
+
+              {tags.length === 0 && (
+                <span className="text-xs text-[var(--mut)] italic">No custom subjects yet.</span>
+              )}
+
+              {onOpenCustomSubjects && (
+                <button
+                  type="button"
+                  onClick={onOpenCustomSubjects}
+                  className="px-2.5 py-1 rounded-full text-xs border border-dashed border-[var(--line)] hover:border-[var(--lamp)] text-[var(--mut)] hover:text-[var(--ink)] cursor-pointer transition-all flex items-center gap-1"
+                >
+                  <span>+</span>
+                  <span>Add Subject</span>
+                </button>
+              )}
             </div>
           </div>
 

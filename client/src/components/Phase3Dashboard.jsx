@@ -5,8 +5,10 @@ import EveningRitualModal from './EveningRitualModal';
 import ManualEntryModal from './ManualEntryModal';
 import ScrapbookModal from './ScrapbookModal';
 import DayGoalModal from './DayGoalModal';
+import HabitTrackerModal from './HabitTrackerModal';
+import CustomSubjectModal from './CustomSubjectModal';
 import { playSfx } from '../utils/audio';
-import { DEFAULT_TAGS, getCurrentUser } from '../utils/api';
+import { getCurrentUser } from '../utils/api';
 
 const SCENES = [
   { name: 'Pine dusk', key: 'pine', palette: ['#3a2f7a', '#e58f6a', '#f6c978', '#fde7a3', '#6b5aa8', '#43397e', '#231c4f', '#1c1640'] },
@@ -29,9 +31,22 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
   const todayIso = now.toISOString().slice(0, 10);
   const currentMonthKey = todayIso.slice(0, 7);
 
-  // Subject Tags state
-  const tags = state.tags || DEFAULT_TAGS;
-  const [selectedTag, setSelectedTag] = useState(tags[0] || DEFAULT_TAGS[0]);
+  // Custom Subject Tags state
+  const tags = state.tags || [];
+  const [selectedTag, setSelectedTag] = useState(tags[0] || null);
+
+  useEffect(() => {
+    if (tags.length > 0 && (!selectedTag || !tags.some((t) => t.id === selectedTag.id))) {
+      setSelectedTag(tags[0]);
+    } else if (tags.length === 0) {
+      setSelectedTag(null);
+    }
+  }, [tags]);
+
+  // Habit Tracker state
+  const habits = state.habits || [];
+  const [showHabitModal, setShowHabitModal] = useState(false);
+  const [showCustomSubjectModal, setShowCustomSubjectModal] = useState(false);
 
   // Mascot interaction
   const [petHop, setPetHop] = useState(false);
@@ -175,23 +190,56 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
     setLastSessionSec(s);
 
     if (s > 0) {
+      const tagName = selectedTag ? selectedTag.name : 'Focus';
+      const tagColor = selectedTag ? selectedTag.color : '#94a3b8';
       const newSession = {
         id: 't' + Date.now(),
         date: todayIso,
         sec: s,
         type: 'timed',
-        tag: selectedTag.name,
-        color: selectedTag.color,
-        note: `${selectedTag.name} focus session`
+        tag: tagName,
+        color: tagColor,
+        note: selectedTag ? `${selectedTag.name} focus session` : 'Focus session'
       };
       onUpdateState({
         ...state,
         sessions: [...(state.sessions || []), newSession]
       });
-      showToast(`${Math.max(1, Math.round(s / 60))}m logged for ${selectedTag.name}`);
+      showToast(`${Math.max(1, Math.round(s / 60))}m logged${selectedTag ? ` for ${selectedTag.name}` : ''}`);
     }
 
     setShowStairsModal(true);
+  };
+
+  // Quick Habit Check-in for Today
+  const handleToggleTodayHabit = (habit) => {
+    const history = { ...(habit.history || {}) };
+    const wasDone = !!history[todayIso];
+    const isNowDone = !wasDone;
+
+    if (isNowDone) {
+      history[todayIso] = true;
+      playSfx('check', state.mute);
+    } else {
+      delete history[todayIso];
+    }
+
+    const prefix = todayIso.slice(0, 7);
+    const monthlyCount = Object.keys(history).filter((k) => k.startsWith(prefix) && history[k]).length;
+    const target = habit.monthlyTarget || 20;
+
+    if (isNowDone && monthlyCount === target) {
+      playSfx('celebrate', state.mute);
+      showToast(`🎉 Monthly Goal Achieved for ${habit.name}! (${monthlyCount}/${target} days)`);
+    } else if (isNowDone) {
+      showToast(`Marked ${habit.name} done today`);
+    }
+
+    const updated = habits.map((h) => (h.id === habit.id ? { ...h, history } : h));
+    onUpdateState({
+      ...state,
+      habits: updated
+    });
   };
 
   // Add a parked distraction
@@ -434,6 +482,21 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
 
           <button
             type="button"
+            onClick={() => setShowHabitModal(true)}
+            title="Habit Tracker & Monthly Goals"
+            className="h-10 px-3.5 rounded-full border border-[var(--line)] bg-[var(--surf2)] hover:border-[var(--lamp)] flex items-center gap-1.5 text-xs font-semibold text-[var(--ink)] transition-all cursor-pointer shadow-sm"
+          >
+            <span>🎯</span>
+            <span className="hidden sm:inline">Habits</span>
+            {habits.length > 0 && (
+              <span className="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] bg-[var(--lamp)] text-[#1b1730] font-bold">
+                {habits.filter((h) => h.history && h.history[todayIso]).length}/{habits.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
             onClick={() => setShowScrapbookModal(true)}
             title="Scrapbook"
             className="w-10 h-10 rounded-full border border-[var(--line)] bg-transparent hover:border-[var(--lamp)] flex items-center justify-center text-lg transition-colors cursor-pointer"
@@ -493,10 +556,10 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
               : 'Tap the lamp to start a focus session.'}
           </p>
 
-          {/* Subject / Category Tag Selector Pill Bar */}
-          <div className="flex items-center gap-1.5 flex-wrap justify-center mb-1 max-w-sm">
+          {/* Custom Subject Selector */}
+          <div className="flex items-center gap-1.5 flex-wrap justify-center mb-1 max-w-md px-2">
             {tags.map((t) => {
-              const isSelected = selectedTag.id === t.id || selectedTag.name === t.name;
+              const isSelected = selectedTag && (selectedTag.id === t.id || selectedTag.name === t.name);
               return (
                 <button
                   key={t.id || t.name}
@@ -518,10 +581,31 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
                   }
                 >
                   <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: t.color }} />
-                  {t.name}
+                  <span>{t.name}</span>
                 </button>
               );
             })}
+
+            <button
+              type="button"
+              onClick={() => setShowCustomSubjectModal(true)}
+              className="px-2.5 py-1 rounded-full text-xs border border-dashed border-[var(--line)] hover:border-[var(--lamp)] text-[var(--mut)] hover:text-[var(--ink)] cursor-pointer transition-all flex items-center gap-1 bg-[var(--surf2)]/50 hover:bg-[var(--surf2)]"
+              title="Add or manage custom subjects"
+            >
+              <span>+</span>
+              <span>{tags.length === 0 ? 'Add Custom Subject' : 'Subject'}</span>
+            </button>
+
+            {tags.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowCustomSubjectModal(true)}
+                className="w-6 h-6 rounded-full border border-[var(--line)] hover:border-[var(--lamp)] text-[var(--mut)] hover:text-[var(--ink)] flex items-center justify-center text-[11px] cursor-pointer transition-colors"
+                title="Manage custom subjects"
+              >
+                ⚙️
+              </button>
+            )}
           </div>
 
           {/* Circular Progress Ring Button */}
@@ -912,6 +996,119 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
         </section>
       </div>
 
+      {/* Habit Tracker & Monthly Goals Section */}
+      <section className="rounded-[26px] border border-[var(--line)] bg-[var(--surf)] p-5 sm:p-6 mt-6">
+        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
+          <div className="flex items-center gap-2.5">
+            <span className="text-2xl">🎯</span>
+            <div>
+              <h2 className="serif text-lg sm:text-xl font-normal text-[var(--ink)]">
+                Habit Tracker & Monthly Goals
+              </h2>
+              <p className="text-xs text-[var(--mut)]">
+                {habits.length === 0
+                  ? 'Track consistent habits with monthly targets'
+                  : `${habits.filter((h) => h.history && h.history[todayIso]).length} of ${habits.length} habits completed today`}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowHabitModal(true)}
+              className="px-3.5 py-1.5 rounded-xl bg-[var(--lamp)] text-[#1b1730] font-semibold text-xs shadow-sm hover:brightness-105 active:scale-95 cursor-pointer flex items-center gap-1.5 transition-all"
+            >
+              <span>View Full Calendar Grid (1-31) ↗</span>
+            </button>
+          </div>
+        </div>
+
+        {habits.length === 0 ? (
+          <div className="p-6 text-center rounded-2xl border border-dashed border-[var(--line)] bg-[var(--surf2)]/50">
+            <span className="text-3xl block mb-2">🌱</span>
+            <p className="text-sm font-medium text-[var(--ink)] mb-1">No habits added yet</p>
+            <p className="text-xs text-[var(--mut)] max-w-md mx-auto mb-3">
+              Set monthly goals for habits like workout, reading, coding, or hydration. Check them off daily to build momentum.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowHabitModal(true)}
+              className="px-4 py-2 rounded-xl bg-[var(--surf2)] border border-[var(--line)] hover:border-[var(--lamp)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all"
+            >
+              + Create Your First Habit
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {habits.map((habit) => {
+              const prefix = todayIso.slice(0, 7);
+              const history = habit.history || {};
+              const completedDays = Object.keys(history).filter((k) => k.startsWith(prefix) && history[k]).length;
+              const target = habit.monthlyTarget || 20;
+              const progressPct = Math.min(100, Math.round((completedDays / target) * 100));
+              const isTodayDone = !!history[todayIso];
+              const isGoalMet = completedDays >= target;
+
+              return (
+                <div
+                  key={habit.id}
+                  className="p-3.5 rounded-2xl bg-[var(--surf2)] border border-[var(--line)] hover:border-[var(--line2)] transition-all flex flex-col justify-between"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0"
+                        style={{ backgroundColor: `${habit.color}25` }}
+                      >
+                        {habit.icon || '💧'}
+                      </span>
+                      <span className="font-semibold text-xs sm:text-sm text-[var(--ink)] truncate">
+                        {habit.name}
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleToggleTodayHabit(habit)}
+                      className={`w-7 h-7 rounded-full flex items-center justify-center text-xs cursor-pointer transition-all border ${
+                        isTodayDone
+                          ? 'text-white shadow-sm'
+                          : 'border-[var(--line)] bg-[var(--surf)] text-[var(--mut)] hover:border-[var(--lamp)]'
+                      }`}
+                      style={isTodayDone ? { backgroundColor: habit.color, borderColor: habit.color } : {}}
+                      title={isTodayDone ? 'Completed today! Click to uncheck' : 'Click to check today'}
+                    >
+                      {isTodayDone ? '✓' : ''}
+                    </button>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between text-[11px] text-[var(--mut)] mb-1">
+                      <span>Goal: {target}d / mo</span>
+                      <span className="font-semibold" style={{ color: habit.color }}>
+                        {completedDays}/{target}d ({progressPct}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-[var(--line)] h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-300"
+                        style={{ width: `${progressPct}%`, backgroundColor: habit.color || '#10b981' }}
+                      />
+                    </div>
+                    {isGoalMet && (
+                      <span className="block text-[10px] text-emerald-400 font-semibold mt-1">
+                        🌟 Monthly Goal Achieved!
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       {/* Action Buttons: Add Hours & Call It a Day */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
         <button
@@ -1095,6 +1292,7 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
         sessions={state.sessions || []}
         tags={tags}
         onClose={() => setShowManualModal(false)}
+        onOpenCustomSubjects={() => setShowCustomSubjectModal(true)}
         onSave={(newSession) => {
           onUpdateState({
             ...state,
@@ -1116,6 +1314,34 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
         isOpen={showScrapbookModal}
         scrap={state.scrap || []}
         onClose={() => setShowScrapbookModal(false)}
+      />
+
+      <CustomSubjectModal
+        isOpen={showCustomSubjectModal}
+        tags={tags}
+        onClose={() => setShowCustomSubjectModal(false)}
+        onSaveTags={(newTags) => {
+          onUpdateState({
+            ...state,
+            tags: newTags
+          });
+          showToast('Subjects updated');
+        }}
+        onSelectTag={(t) => setSelectedTag(t)}
+      />
+
+      <HabitTrackerModal
+        isOpen={showHabitModal}
+        habits={habits}
+        isMuted={state.mute}
+        showToast={showToast}
+        onClose={() => setShowHabitModal(false)}
+        onSaveHabits={(newHabits) => {
+          onUpdateState({
+            ...state,
+            habits: newHabits
+          });
+        }}
       />
 
       <DayGoalModal
