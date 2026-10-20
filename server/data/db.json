@@ -45,7 +45,89 @@
         "snooze": 0,
         "lastBackup": "",
         "tags": [],
-        "habits": []
+        "habits": [
+          {
+            "id": "h_1792493896393_0",
+            "name": "Wake up at 7 AM",
+            "icon": "⏰",
+            "color": "#10b981",
+            "monthlyTarget": 25,
+            "createdAt": "2026-10-20T10:58:16.393Z",
+            "history": {}
+          },
+          {
+            "id": "h_1792493896393_1",
+            "name": "Drink 2L Water",
+            "icon": "💧",
+            "color": "#06b6d4",
+            "monthlyTarget": 28,
+            "createdAt": "2026-10-20T10:58:16.393Z",
+            "history": {}
+          },
+          {
+            "id": "h_1792493896393_2",
+            "name": "Meditate & Breathe",
+            "icon": "🧘",
+            "color": "#a855f7",
+            "monthlyTarget": 20,
+            "createdAt": "2026-10-20T10:58:16.393Z",
+            "history": {}
+          },
+          {
+            "id": "h_1792493896393_3",
+            "name": "Make Bed",
+            "icon": "🛏️",
+            "color": "#f59e0b",
+            "monthlyTarget": 25,
+            "createdAt": "2026-10-20T10:58:16.393Z",
+            "history": {}
+          },
+          {
+            "id": "h_1792493896393_4",
+            "name": "Go for a walk / Stretch",
+            "icon": "🏃‍♂️",
+            "color": "#10b981",
+            "monthlyTarget": 22,
+            "createdAt": "2026-10-20T10:58:16.393Z",
+            "history": {}
+          },
+          {
+            "id": "h_1792493896393_5",
+            "name": "Deep Work / Focus Study",
+            "icon": "💻",
+            "color": "#3b82f6",
+            "monthlyTarget": 22,
+            "createdAt": "2026-10-20T10:58:16.393Z",
+            "history": {}
+          },
+          {
+            "id": "h_1792493896393_6",
+            "name": "Read for 20 minutes",
+            "icon": "📚",
+            "color": "#ec4899",
+            "monthlyTarget": 20,
+            "createdAt": "2026-10-20T10:58:16.393Z",
+            "history": {}
+          },
+          {
+            "id": "h_1792493896393_7",
+            "name": "Write in journal",
+            "icon": "✍️",
+            "color": "#f43f5e",
+            "monthlyTarget": 15,
+            "createdAt": "2026-10-20T10:58:16.393Z",
+            "history": {}
+          },
+          {
+            "id": "h_1792493896393_8",
+            "name": "Go to bed by 11 PM",
+            "icon": "💤",
+            "color": "#6366f1",
+            "monthlyTarget": 25,
+            "createdAt": "2026-10-20T10:58:16.393Z",
+            "history": {}
+          }
+        ]
       }
     },
     "aarya": {

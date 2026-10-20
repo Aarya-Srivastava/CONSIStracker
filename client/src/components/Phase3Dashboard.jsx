@@ -522,33 +522,45 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
         </div>
       </header>
 
-      {/* Main Grid: Hero + Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-[1.15fr_0.85fr] gap-5">
-        {/* Hero Section */}
-        <section className="relative rounded-[26px] border border-[var(--line)] bg-[var(--surf)] p-6 sm:p-7 flex flex-col items-center text-center overflow-hidden bg-[radial-gradient(70%_60%_at_50%_38%,rgba(240,178,90,0.16),transparent_70%)]">
+      {/* Main Hero Focus Timer Section (Expanded Full Width) */}
+      <div className="w-full">
+        <section className="relative rounded-[32px] border border-[var(--line)] bg-[var(--surf)] p-6 sm:p-10 flex flex-col items-center text-center overflow-hidden bg-[radial-gradient(85%_75%_at_50%_35%,rgba(240,178,90,0.18),transparent_75%)] shadow-xl">
           {/* Diano Mascot */}
           <div className="relative mb-2">
             <svg
               onClick={handlePokeDiano}
               role="img"
               aria-label="Diano"
-              className={`w-20 h-20 cursor-pointer transition-transform ${
+              className={`w-24 h-24 cursor-pointer transition-transform ${
                 petHop ? 'pet-hop' : isPetAwake ? 'pet-glad' : ''
               }`}
             >
               <use href="#dn" />
             </svg>
             {!isPetAwake && (
-              <span className="absolute top-1 left-20 serif italic text-sm text-[var(--mut)] pet-zz">
+              <span className="absolute top-1 left-24 serif italic text-sm text-[var(--mut)] pet-zz">
                 z z
               </span>
             )}
           </div>
 
-          <h2 className="serif text-xl sm:text-2xl font-normal text-[var(--ink)] mb-1">
+          <h2 className="serif text-2xl sm:text-3xl font-normal text-[var(--ink)] mb-1">
             {progressPct >= 1 ? 'Goal reached' : todaySec > 0 ? 'Keep the lamp lit' : 'Ready when you are'}
           </h2>
-          <p className="text-xs sm:text-[13.5px] text-[var(--mut)] mb-3">
+
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-3.5 py-1 rounded-full text-xs font-semibold bg-[var(--surf2)] border border-[var(--line)] text-[var(--ink)] flex items-center gap-1.5 shadow-sm">
+              <span>🔥</span>
+              <span>{rawStreak} {rawStreak === 1 ? 'day' : 'days'} streak</span>
+              {isShieldActive && (
+                <span className="text-amber-300 ml-1 font-bold" title="Shield Active">
+                  🛡️ Active
+                </span>
+              )}
+            </span>
+          </div>
+
+          <p className="text-xs sm:text-sm text-[var(--mut)] mb-3">
             {progressPct >= 1
               ? 'Anything more is a bonus. Rest is allowed too.'
               : todaySec > 0
@@ -608,35 +620,36 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
             )}
           </div>
 
-          {/* Circular Progress Ring Button */}
+          {/* Circular Progress Ring Button - Now BIG and IMMERSIVE */}
           <button
             type="button"
             onClick={() => startTimer()}
             aria-label="Start focus session"
-            className="relative w-[min(260px,68vw)] aspect-square border-0 bg-transparent my-2 cursor-pointer group"
+            className="relative w-[min(380px,85vw)] aspect-square border-0 bg-transparent my-4 cursor-pointer group transition-transform hover:scale-[1.01]"
           >
             <svg viewBox="0 0 240 240" className="w-full h-full -rotate-90">
-              <circle cx="120" cy="120" r="108" fill="none" stroke="var(--line)" strokeWidth="10" />
+              <circle cx="120" cy="120" r="106" fill="none" stroke="var(--line)" strokeWidth="10" />
               <circle
                 cx="120"
                 cy="120"
-                r="108"
+                r="106"
                 fill="none"
                 stroke="var(--lamp)"
                 strokeWidth="10"
                 strokeLinecap="round"
-                strokeDasharray="678.6"
-                strokeDashoffset={ringOffset}
-                className="transition-all duration-800 group-hover:drop-shadow-[0_0_12px_var(--lamp)]"
+                strokeDasharray="666"
+                strokeDashoffset={666 * (1 - progressPct)}
+                className="transition-all duration-800 group-hover:drop-shadow-[0_0_20px_var(--lamp)]"
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="serif text-4xl sm:text-5xl font-normal tabular-nums leading-none">
+              <span className="serif text-5xl sm:text-6xl md:text-7xl font-normal tabular-nums leading-none tracking-tight">
                 {fmtMinSec(todaySec)}
               </span>
-              <span className="text-xs text-[var(--mut)] mt-1">of {todayGoal}h today</span>
-              <span className="text-xs font-semibold text-[var(--lamp)] mt-2 flex items-center gap-1">
-                Start {selectedTag ? `${selectedTag.name} ` : ''}session
+              <span className="text-xs sm:text-sm text-[var(--mut)] mt-2 font-medium">of {todayGoal}h goal today</span>
+              <span className="text-xs sm:text-sm font-semibold text-[var(--lamp)] mt-3 px-3.5 py-1 rounded-full bg-[var(--lamp)]/15 border border-[var(--lamp)]/35 flex items-center gap-1.5 shadow-sm">
+                <span>▶</span>
+                <span>Start {selectedTag ? `${selectedTag.name} ` : ''}session</span>
               </span>
             </div>
           </button>
@@ -716,49 +729,6 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
               <option value="4">4 hours</option>
               <option value="6">6 hours</option>
             </select>
-          </div>
-        </section>
-
-        {/* Stats Section with Anti-Derailment Streak Shield */}
-        <section className="rounded-[26px] border border-[var(--line)] bg-[var(--surf)] p-6 sm:p-7 flex flex-col justify-between">
-          <div>
-            <h2 className="serif text-xl sm:text-2xl font-normal text-[var(--ink)] mb-1">
-              {weekOffset ? `Week of ${monday.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : 'This week'}
-            </h2>
-            <p className="text-xs text-[var(--mut)]">
-              {(weekTimedSec / 3600).toFixed(1)}h timed, {(weekManualSec / 3600).toFixed(1)}h added manually
-            </p>
-          </div>
-
-          <div className="flex flex-col divide-y divide-[var(--line)] my-auto">
-            {/* Streak with Shield Status */}
-            <div className="flex items-baseline justify-between py-4">
-              <div>
-                <span className="text-[13.5px] text-[var(--mut)] block">Current streak</span>
-                {isShieldActive && (
-                  <span className="text-[11px] text-amber-300 font-medium">
-                    🛡️ Streak Shield Active (Study 20m today to save)
-                  </span>
-                )}
-              </div>
-              <b className="serif text-3xl sm:text-4xl font-normal text-[var(--ink)] flex items-center gap-1.5">
-                {rawStreak} {rawStreak === 1 ? 'day' : 'days'}
-                {isShieldActive && <span className="text-xl" title="Shield Active">🛡️</span>}
-              </b>
-            </div>
-
-            <div className="flex items-baseline justify-between py-4">
-              <span className="text-[13.5px] text-[var(--mut)]">Focus time</span>
-              <b className="serif text-3xl sm:text-4xl font-normal text-[var(--ink)]">
-                {(weekTotalSec / 3600).toFixed(1)}h
-              </b>
-            </div>
-            <div className="flex items-baseline justify-between py-4">
-              <span className="text-[13.5px] text-[var(--mut)]">Sessions logged</span>
-              <b className="serif text-3xl sm:text-4xl font-normal text-[var(--ink)]">
-                {weekSessionsCount}
-              </b>
-            </div>
           </div>
         </section>
       </div>
