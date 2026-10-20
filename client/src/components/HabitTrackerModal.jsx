@@ -410,7 +410,7 @@ export default function HabitTrackerModal({
               <table className="w-full border-collapse text-xs">
                 <thead>
                   {/* Row 1: Weekday Names (MON, TUE, WED, ...) */}
-                  <tr className="bg-[#f7d6d0]/25 dark:bg-[#341e33]/50 text-[var(--ink)] border-b border-[var(--line)]">
+                  <tr className="bg-[var(--surf2)] text-[var(--ink)] border-b border-[var(--line)]">
                     <th className="sticky left-0 z-20 bg-[var(--surf2)] p-2.5 text-left font-semibold text-xs border-r border-[var(--line)] min-w-[200px] sm:min-w-[240px]">
                       HABIT & MONTHLY GOAL
                     </th>
@@ -418,19 +418,19 @@ export default function HabitTrackerModal({
                       <th
                         key={d.dayNum}
                         className={`p-1.5 text-center font-bold text-[10px] sm:text-[11px] min-w-[32px] sm:min-w-[36px] border-r border-[var(--line)]/60 ${
-                          d.isToday ? 'bg-teal-500/30 text-teal-300 font-extrabold' : 'text-[var(--mut)]'
+                          d.isToday ? 'bg-[var(--lamp)]/25 text-[var(--lamp)] font-extrabold' : 'text-[var(--mut)]'
                         }`}
                       >
                         {d.dayOfWeekName}
                       </th>
                     ))}
-                    <th className="p-2 text-center font-semibold text-[11px] min-w-[90px] bg-[var(--surf2)]">
+                    <th className="p-2 text-center font-semibold text-[11px] min-w-[90px] bg-[var(--surf2)] text-[var(--mut)]">
                       MONTHLY GOAL
                     </th>
                   </tr>
 
                   {/* Row 2: Day Numbers (1, 2, 3, ... 31) */}
-                  <tr className="bg-[#f7d6d0]/15 dark:bg-[#25192b]/40 text-[var(--ink)] border-b border-[var(--line)] font-semibold">
+                  <tr className="bg-[var(--surf2)]/70 text-[var(--ink)] border-b border-[var(--line)] font-semibold">
                     <th className="sticky left-0 z-20 bg-[var(--surf2)] p-2 text-left text-[11px] text-[var(--mut)] border-r border-[var(--line)] font-normal">
                       Target & Progress
                     </th>
@@ -438,7 +438,7 @@ export default function HabitTrackerModal({
                       <th
                         key={d.dayNum}
                         className={`p-1 text-center text-xs border-r border-[var(--line)]/60 ${
-                          d.isToday ? 'bg-teal-500/40 text-teal-200 font-bold' : ''
+                          d.isToday ? 'bg-[var(--lamp)] text-[#1b1730] font-bold rounded-sm' : ''
                         }`}
                       >
                         {d.dayNum}
@@ -521,7 +521,6 @@ export default function HabitTrackerModal({
                         {/* Interactive 1-31 Checkbox Cells */}
                         {monthDays.map((d) => {
                           const isDone = !!history[d.dateKey];
-                          const isMissed = !isDone && d.isPast;
 
                           return (
                             <td
@@ -533,16 +532,14 @@ export default function HabitTrackerModal({
                               <button
                                 type="button"
                                 onClick={() => toggleDay(habit, d.dateKey)}
-                                className={`w-6 h-6 sm:w-7 sm:h-7 mx-auto rounded-md flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
+                                className={`w-6 h-6 sm:w-7 sm:h-7 mx-auto rounded-lg flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
                                   isDone
-                                    ? 'bg-emerald-500 border border-emerald-400 text-white shadow-sm'
-                                    : isMissed
-                                    ? 'border border-rose-400/50 bg-rose-500/10 text-rose-400 hover:bg-rose-500/25'
-                                    : 'border border-[var(--line)] bg-[var(--surf)] text-transparent hover:border-emerald-400/60'
+                                    ? 'bg-emerald-500 border border-emerald-400 text-white shadow-md hover:scale-105 hover:brightness-110'
+                                    : 'border border-[var(--line)] bg-[var(--surf)] hover:border-emerald-400/60 hover:bg-[var(--surf2)]'
                                 }`}
-                                title={`${habit.name} on ${d.dateKey}: ${isDone ? 'Completed ✓' : isMissed ? 'Missed ✕' : 'Pending'}`}
+                                title={`${habit.name} on ${d.dateKey}: ${isDone ? 'Completed ✓ (click to uncheck)' : 'Click to check off'}`}
                               >
-                                {isDone ? '✓' : isMissed ? '✕' : ''}
+                                {isDone ? '✓' : ''}
                               </button>
                             </td>
                           );
@@ -612,18 +609,14 @@ export default function HabitTrackerModal({
 
         {/* Modal Footer */}
         <div className="p-3 sm:p-4 border-t border-[var(--line)] bg-[var(--surf)] flex items-center justify-between text-xs text-[var(--mut)] flex-wrap gap-2">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 text-xs text-[var(--mut)]">
             <span className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded bg-emerald-500 inline-flex items-center justify-center text-white text-[9px] font-bold">✓</span>
-              <span>Completed</span>
+              <span className="w-4 h-4 rounded-md bg-emerald-500 inline-flex items-center justify-center text-white text-[10px] font-bold">✓</span>
+              <span className="text-[var(--ink)] font-medium">Completed</span>
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded border border-rose-400/50 bg-rose-500/10 inline-flex items-center justify-center text-rose-400 text-[9px] font-bold">✕</span>
-              <span>Missed (Past)</span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-3.5 h-3.5 rounded border border-[var(--line)] bg-[var(--surf)] inline-block"></span>
-              <span>Pending / Future</span>
+              <span className="w-4 h-4 rounded-md border border-[var(--line)] bg-[var(--surf)] inline-block"></span>
+              <span>Tap any day to toggle completion</span>
             </span>
           </div>
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import TimerOverlay from './TimerOverlay';
 import StairsOverlay from './StairsOverlay';
 import EveningRitualModal from './EveningRitualModal';
@@ -108,6 +108,26 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
   const [selectedGoalDate, setSelectedGoalDate] = useState('');
   const [weekOffset, setWeekOffset] = useState(0);
   const [chartView, setChartView] = useState('total'); // 'total' | 'subjects'
+
+  // Habit Monthly Statistics
+  const monthStats = useMemo(() => {
+    const prefix = todayIso.slice(0, 7);
+    let goalsMet = 0;
+    let totalTarget = 0;
+    let totalCompleted = 0;
+
+    habits.forEach((h) => {
+      const history = h.history || {};
+      const completed = Object.keys(history).filter((k) => k.startsWith(prefix) && history[k]).length;
+      const target = h.monthlyTarget || 20;
+      totalTarget += target;
+      totalCompleted += completed;
+      if (completed >= target) goalsMet++;
+    });
+
+    const completionRate = totalTarget > 0 ? Math.round((totalCompleted / totalTarget) * 100) : 0;
+    return { goalsMet, totalTarget, totalCompleted, completionRate };
+  }, [habits, todayIso]);
 
   // Goal calculations
   const defaultGoal = state.goal || 2;
@@ -466,109 +486,114 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
         </div>
       )}
 
-      {/* Header with User Profile */}
-      <header className="flex justify-between items-center gap-4 pb-6 flex-wrap">
+      {/* Header with Sleek Modern Toolbar */}
+      <header className="flex justify-between items-center gap-4 pb-6">
         <div>
-          <div className="serif text-2xl sm:text-3xl font-semibold text-[var(--ink)]">
+          <div className="serif text-2xl sm:text-3xl font-semibold text-[var(--ink)] tracking-tight">
             Consistracker
-            <small className="serif italic font-normal text-xs sm:text-sm text-[var(--mut)] block">
-              a little progress, every day
-            </small>
           </div>
+          <p className="serif italic font-normal text-xs text-[var(--mut)]">
+            a little progress, every day
+          </p>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {/* Active User Badge with Logout / Switch */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-[var(--line)] bg-[var(--surf2)] text-xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span className="font-semibold text-[var(--ink)]">
-              {currentUser.username}
+        <div className="flex items-center gap-3">
+          {/* Subtle Date & Time display */}
+          <div className="hidden lg:flex flex-col text-right text-xs text-[var(--mut)] pr-2 border-r border-[var(--line)]">
+            <span className="font-medium text-[var(--ink)]">
+              {now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             </span>
-            <button
-              type="button"
-              onClick={onLogout}
-              title="Switch user or log out"
-              className="text-[var(--mut)] hover:text-[var(--warn)] ml-1 cursor-pointer font-medium"
-            >
-              (switch)
-            </button>
-          </div>
-
-          <div className="hidden sm:block text-right text-xs text-[var(--mut)] ml-1">
-            <b className="block text-[var(--ink)] font-semibold">
-              {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </b>
-            <span>
+            <span className="text-[11px] opacity-75">
               {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowHabitModal(true)}
-            title="Habit Tracker & Monthly Goals"
-            className="h-10 px-3.5 rounded-full border border-[var(--line)] bg-[var(--surf2)] hover:border-[var(--lamp)] flex items-center gap-1.5 text-xs font-semibold text-[var(--ink)] transition-all cursor-pointer shadow-sm"
-          >
-            <span>🎯</span>
-            <span className="hidden sm:inline">Habits</span>
-            {habits.length > 0 && (
-              <span className="ml-0.5 px-1.5 py-0.5 rounded-full text-[10px] bg-[var(--lamp)] text-[#1b1730] font-bold">
-                {habits.filter((h) => h.history && h.history[todayIso]).length}/{habits.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowScrapbookModal(true)}
-            title="Scrapbook"
-            className="w-10 h-10 rounded-full border border-[var(--line)] bg-transparent hover:border-[var(--lamp)] flex items-center justify-center text-lg transition-colors cursor-pointer"
-          >
-            📖
-          </button>
-          {/* Sound & Volume Control */}
-          <div className="relative flex items-center">
+          {/* Unified Glassmorphic Action Bar */}
+          <div className="flex items-center gap-1.5 p-1 rounded-full bg-[var(--surf)] border border-[var(--line)] shadow-sm backdrop-blur-md">
+            {/* User Profile Chip */}
             <button
               type="button"
-              onClick={toggleMute}
-              onMouseEnter={() => setShowVolumeSlider(true)}
-              title={state.mute ? 'Unmute sounds' : `Sounds on (${volume}%) - hover to adjust`}
-              className="w-10 h-10 rounded-full border border-[var(--line)] bg-transparent hover:border-[var(--lamp)] flex items-center justify-center text-lg transition-colors cursor-pointer"
+              onClick={onLogout}
+              title={`Logged in as ${currentUser.username}. Click to switch user or log out`}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--surf2)] hover:bg-[var(--line)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all border border-transparent hover:border-[var(--line)]"
             >
-              {state.mute || volume === 0 ? '🔕' : '🔔'}
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span className="max-w-[80px] truncate">{currentUser.username}</span>
+              <span className="text-[10px] text-[var(--mut)]">↳</span>
             </button>
 
-            {/* Subtle Volume Slider Popup / Hover Pill */}
-            {showVolumeSlider && (
-              <div
-                onMouseLeave={() => setShowVolumeSlider(false)}
-                className="absolute right-0 top-12 z-30 p-3 bg-[var(--surf2)] border border-[var(--line)] rounded-2xl shadow-xl flex items-center gap-2.5 min-w-[170px] animate-fade-in"
+            {/* Habits Quick Pill */}
+            <button
+              type="button"
+              onClick={() => setShowHabitModal(true)}
+              title="Open Habit Tracker & Monthly Goals"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--surf2)] hover:border-[var(--lamp)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all border border-transparent"
+            >
+              <span>🎯</span>
+              <span className="hidden sm:inline">Habits</span>
+              {habits.length > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[var(--lamp)]/25 text-[var(--lamp)] font-bold">
+                  {habits.filter((h) => h.history && h.history[todayIso]).length}/{habits.length}
+                </span>
+              )}
+            </button>
+
+            {/* Scrapbook Icon */}
+            <button
+              type="button"
+              onClick={() => setShowScrapbookModal(true)}
+              title="Scrapbook"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[var(--mut)] hover:text-[var(--ink)] hover:bg-[var(--surf2)] transition-colors cursor-pointer"
+            >
+              📖
+            </button>
+
+            {/* Sound & Volume Control */}
+            <div className="relative flex items-center">
+              <button
+                type="button"
+                onClick={toggleMute}
+                onMouseEnter={() => setShowVolumeSlider(true)}
+                title={state.mute ? 'Unmute sounds' : `Sounds on (${volume}%)`}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[var(--mut)] hover:text-[var(--ink)] hover:bg-[var(--surf2)] transition-colors cursor-pointer"
               >
-                <span className="text-xs text-[var(--mut)] cursor-pointer" onClick={() => handleVolumeChange(0)}>
-                  🔇
-                </span>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={state.mute ? 0 : volume}
-                  onChange={(e) => handleVolumeChange(e.target.value)}
-                  className="w-24 accent-[var(--lamp)] cursor-pointer h-1.5"
-                />
-                <span className="text-[11px] font-bold text-[var(--ink)] min-w-[28px] text-right">
-                  {state.mute ? 0 : volume}%
-                </span>
-              </div>
-            )}
+                {state.mute || volume === 0 ? '🔕' : '🔔'}
+              </button>
+
+              {/* Volume Slider Popup */}
+              {showVolumeSlider && (
+                <div
+                  onMouseLeave={() => setShowVolumeSlider(false)}
+                  className="absolute right-0 top-10 z-30 p-3 bg-[var(--surf2)] border border-[var(--line)] rounded-2xl shadow-xl flex items-center gap-2.5 min-w-[170px] animate-fade-in"
+                >
+                  <span className="text-xs text-[var(--mut)] cursor-pointer" onClick={() => handleVolumeChange(0)}>
+                    🔇
+                  </span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={state.mute ? 0 : volume}
+                    onChange={(e) => handleVolumeChange(e.target.value)}
+                    className="w-24 accent-[var(--lamp)] cursor-pointer h-1.5"
+                  />
+                  <span className="text-[11px] font-bold text-[var(--ink)] min-w-[28px] text-right">
+                    {state.mute ? 0 : volume}%
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Theme Toggle */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              title="Switch light or dark mode"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[var(--mut)] hover:text-[var(--ink)] hover:bg-[var(--surf2)] transition-colors cursor-pointer"
+            >
+              ◐
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={toggleTheme}
-            title="Switch light or dark"
-            className="w-10 h-10 rounded-full border border-[var(--line)] bg-transparent hover:border-[var(--lamp)] flex items-center justify-center text-lg transition-colors cursor-pointer"
-          >
-            ◐
-          </button>
         </div>
       </header>
 
@@ -1016,115 +1041,192 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
         </section>
       </div>
 
-      {/* Habit Tracker & Monthly Goals Section */}
-      <section className="rounded-[26px] border border-[var(--line)] bg-[var(--surf)] p-5 sm:p-6 mt-6">
-        <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
-          <div className="flex items-center gap-2.5">
-            <span className="text-2xl">🎯</span>
-            <div>
-              <h2 className="serif text-lg sm:text-xl font-normal text-[var(--ink)]">
-                Habit Tracker & Monthly Goals
-              </h2>
-              <p className="text-xs text-[var(--mut)]">
-                {habits.length === 0
-                  ? 'Track consistent habits with monthly targets'
-                  : `${habits.filter((h) => h.history && h.history[todayIso]).length} of ${habits.length} habits completed today`}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowHabitModal(true)}
-              className="px-3.5 py-1.5 rounded-xl bg-[var(--lamp)] text-[#1b1730] font-semibold text-xs shadow-sm hover:brightness-105 active:scale-95 cursor-pointer flex items-center gap-1.5 transition-all"
-            >
-              <span>View Full Calendar Grid (1-31) ↗</span>
-            </button>
-          </div>
-        </div>
-
+      {/* Habit Tracker & Monthly Goals Overview (Interactive Summary Card) */}
+      <section
+        onClick={() => setShowHabitModal(true)}
+        className="group relative rounded-[28px] border border-[var(--line)] bg-[var(--surf)] p-5 sm:p-7 mt-6 cursor-pointer hover:border-[var(--lamp)] hover:shadow-lg transition-all duration-300"
+      >
         {habits.length === 0 ? (
-          <div className="p-6 text-center rounded-2xl border border-dashed border-[var(--line)] bg-[var(--surf2)]/50">
+          <div className="py-8 text-center">
             <span className="text-3xl block mb-2">🌱</span>
-            <p className="text-sm font-medium text-[var(--ink)] mb-1">No habits added yet</p>
-            <p className="text-xs text-[var(--mut)] max-w-md mx-auto mb-3">
-              Set monthly goals for habits like workout, reading, coding, or hydration. Check them off daily to build momentum.
+            <h2 className="serif text-lg font-normal text-[var(--ink)] mb-1">Daily Tasks & Monthly Goals</h2>
+            <p className="text-xs text-[var(--mut)] max-w-md mx-auto mb-4">
+              Set monthly targets for your habits, build momentum, and track your daily adherence matrix.
             </p>
             <button
               type="button"
-              onClick={() => setShowHabitModal(true)}
-              className="px-4 py-2 rounded-xl bg-[var(--surf2)] border border-[var(--line)] hover:border-[var(--lamp)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowHabitModal(true);
+              }}
+              className="px-4 py-2 rounded-xl bg-[var(--lamp)] text-[#1b1730] text-xs font-semibold hover:brightness-105 active:scale-95 cursor-pointer transition-all shadow-sm"
             >
               + Create Your First Habit
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {habits.map((habit) => {
-              const prefix = todayIso.slice(0, 7);
-              const history = habit.history || {};
-              const completedDays = Object.keys(history).filter((k) => k.startsWith(prefix) && history[k]).length;
-              const target = habit.monthlyTarget || 20;
-              const progressPct = Math.min(100, Math.round((completedDays / target) * 100));
-              const isTodayDone = !!history[todayIso];
-              const isGoalMet = completedDays >= target;
-
-              return (
-                <div
-                  key={habit.id}
-                  className="p-3.5 rounded-2xl bg-[var(--surf2)] border border-[var(--line)] hover:border-[var(--line2)] transition-all flex flex-col justify-between"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0"
-                        style={{ backgroundColor: `${habit.color}25` }}
-                      >
-                        {habit.icon || '💧'}
-                      </span>
-                      <span className="font-semibold text-xs sm:text-sm text-[var(--ink)] truncate">
-                        {habit.name}
-                      </span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleToggleTodayHabit(habit)}
-                      className={`w-7 h-7 rounded-full flex items-center justify-center text-xs cursor-pointer transition-all border ${
-                        isTodayDone
-                          ? 'text-white shadow-sm'
-                          : 'border-[var(--line)] bg-[var(--surf)] text-[var(--mut)] hover:border-[var(--lamp)]'
-                      }`}
-                      style={isTodayDone ? { backgroundColor: habit.color, borderColor: habit.color } : {}}
-                      title={isTodayDone ? 'Completed today! Click to uncheck' : 'Click to check today'}
-                    >
-                      {isTodayDone ? '✓' : ''}
-                    </button>
+          <div>
+            {/* Header */}
+            <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+              <div className="flex items-center gap-3">
+                <span className="w-10 h-10 rounded-2xl bg-[color-mix(in_srgb,var(--lamp)_18%,var(--surf2))] border border-[var(--line)] flex items-center justify-center text-xl shadow-xs">
+                  🎯
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-md bg-[var(--surf2)] text-[var(--mut)] border border-[var(--line)]">
+                      {now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <span className="text-[10px] text-[var(--mut)] font-medium">Daily Tasks & Monthly Goals</span>
                   </div>
+                  <h2 className="serif text-xl sm:text-2xl font-normal text-[var(--ink)] mt-0.5">
+                    Habit Adherence Overview
+                  </h2>
+                </div>
+              </div>
 
-                  <div>
-                    <div className="flex items-center justify-between text-[11px] text-[var(--mut)] mb-1">
-                      <span>Goal: {target}d / mo</span>
-                      <span className="font-semibold" style={{ color: habit.color }}>
-                        {completedDays}/{target}d ({progressPct}%)
-                      </span>
-                    </div>
-                    <div className="w-full bg-[var(--line)] h-1.5 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all duration-300"
-                        style={{ width: `${progressPct}%`, backgroundColor: habit.color || '#10b981' }}
-                      />
-                    </div>
-                    {isGoalMet && (
-                      <span className="block text-[10px] text-emerald-400 font-semibold mt-1">
-                        🌟 Monthly Goal Achieved!
-                      </span>
-                    )}
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[var(--surf2)] group-hover:bg-[var(--lamp)] text-[var(--ink)] group-hover:text-[#1b1730] border border-[var(--line)] group-hover:border-transparent text-xs font-semibold transition-all shadow-xs">
+                  <span>Open Habit List & Grid</span>
+                  <span className="text-sm transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5">↗</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Main Interactive Overview Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+              {/* Circular Adherence Ring */}
+              <div className="md:col-span-4 flex flex-col items-center justify-center p-5 rounded-2xl bg-[var(--surf2)]/70 border border-[var(--line)]">
+                <div className="relative w-32 h-32 flex items-center justify-center">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="none"
+                      stroke="var(--line)"
+                      strokeWidth="8"
+                    />
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="none"
+                      stroke="var(--lamp)"
+                      strokeWidth="8"
+                      strokeDasharray={2 * Math.PI * 40}
+                      strokeDashoffset={2 * Math.PI * 40 * (1 - Math.min(100, monthStats.completionRate) / 100)}
+                      strokeLinecap="round"
+                      className="transition-all duration-700 ease-out"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <span className="text-2xl font-bold tracking-tight text-[var(--ink)]">
+                      {monthStats.completionRate}%
+                    </span>
+                    <span className="text-[10px] tracking-widest uppercase font-semibold text-[var(--mut)]">
+                      Adherence
+                    </span>
                   </div>
                 </div>
-              );
-            })}
+                <p className="text-[11px] text-[var(--mut)] text-center mt-3">
+                  Overall monthly progress across all active targets
+                </p>
+              </div>
+
+              {/* Stats & Quick Habit Overview */}
+              <div className="md:col-span-8 flex flex-col justify-between h-full gap-4">
+                {/* 3 Metric Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-3.5 rounded-2xl bg-[var(--surf2)] border border-[var(--line)]">
+                    <span className="text-[10px] font-semibold text-[var(--mut)] tracking-wide uppercase block mb-1">
+                      Goals Met
+                    </span>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xl font-bold text-[var(--ink)]">
+                        {monthStats.goalsMet}
+                      </span>
+                      <span className="text-xs text-[var(--mut)]">/ {habits.length} habits</span>
+                    </div>
+                    <span className="text-[10px] text-emerald-500 font-medium mt-1 block">
+                      {monthStats.goalsMet > 0 ? `${monthStats.goalsMet} target reached` : 'Targets in progress'}
+                    </span>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-[var(--surf2)] border border-[var(--line)]">
+                    <span className="text-[10px] font-semibold text-[var(--mut)] tracking-wide uppercase block mb-1">
+                      Month Check-ins
+                    </span>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xl font-bold text-[var(--ink)]">
+                        {monthStats.totalCompleted}
+                      </span>
+                      <span className="text-xs text-[var(--mut)]">/ {monthStats.totalTarget}d target</span>
+                    </div>
+                    <span className="text-[10px] text-[var(--mut)] mt-1 block">
+                      Cumulative days completed
+                    </span>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-[var(--surf2)] border border-[var(--line)]">
+                    <span className="text-[10px] font-semibold text-[var(--mut)] tracking-wide uppercase block mb-1">
+                      Today's Momentum
+                    </span>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xl font-bold text-[var(--ink)]">
+                        {habits.filter((h) => h.history && h.history[todayIso]).length}
+                      </span>
+                      <span className="text-xs text-[var(--mut)]">/ {habits.length} done</span>
+                    </div>
+                    <span className="text-[10px] text-emerald-500 font-medium mt-1 block">
+                      {habits.filter((h) => h.history && h.history[todayIso]).length === habits.length && habits.length > 0
+                        ? 'All completed today! 🌟'
+                        : 'Tap habit below to check'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Quick Interactive Habit Chips */}
+                <div className="p-3.5 rounded-2xl bg-[var(--surf2)]/50 border border-[var(--line)] flex flex-wrap items-center gap-2">
+                  <span className="text-xs text-[var(--mut)] font-medium mr-1">Habits today:</span>
+                  {habits.slice(0, 6).map((habit) => {
+                    const isTodayDone = !!(habit.history && habit.history[todayIso]);
+                    return (
+                      <button
+                        key={habit.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleTodayHabit(habit);
+                        }}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                          isTodayDone
+                            ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
+                            : 'bg-[var(--surf)] border-[var(--line)] text-[var(--ink)] hover:border-[var(--lamp)]'
+                        }`}
+                        title={isTodayDone ? `${habit.name}: Completed today! Click to uncheck` : `${habit.name}: Click to check off today`}
+                      >
+                        <span>{habit.icon || '💧'}</span>
+                        <span className="max-w-[100px] truncate">{habit.name}</span>
+                        <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                          isTodayDone ? 'bg-emerald-500 text-white' : 'border border-[var(--line)] text-transparent'
+                        }`}>
+                          ✓
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {habits.length > 6 && (
+                    <span className="text-xs text-[var(--mut)] font-semibold px-2 py-0.5">
+                      +{habits.length - 6} more
+                    </span>
+                  )}
+                  <span className="text-[11px] text-[var(--mut)] ml-auto hidden sm:inline-block">
+                    Click card to view 31-day matrix →
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </section>
