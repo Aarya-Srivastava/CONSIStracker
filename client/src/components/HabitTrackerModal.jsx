@@ -89,6 +89,26 @@ export default function HabitTrackerModal({
     return new Date(viewYear, viewMonth, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
   }, [viewYear, viewMonth]);
 
+  // Month Statistics (must be declared before any early return)
+  const monthStats = useMemo(() => {
+    const prefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
+    let goalsMet = 0;
+    let totalTarget = 0;
+    let totalCompleted = 0;
+
+    habits.forEach((h) => {
+      const history = h.history || {};
+      const completed = Object.keys(history).filter((k) => k.startsWith(prefix) && history[k]).length;
+      const target = h.monthlyTarget || 20;
+      totalTarget += target;
+      totalCompleted += completed;
+      if (completed >= target) goalsMet++;
+    });
+
+    const completionRate = totalTarget > 0 ? Math.round((totalCompleted / totalTarget) * 100) : 0;
+    return { goalsMet, totalTarget, totalCompleted, completionRate };
+  }, [habits, viewYear, viewMonth]);
+
   if (!isOpen) return null;
 
   const handlePrevMonth = () => {
@@ -209,26 +229,6 @@ export default function HabitTrackerModal({
     const updated = habits.map((h) => (h.id === habit.id ? { ...h, history } : h));
     onSaveHabits(updated);
   };
-
-  // Month Statistics
-  const monthStats = useMemo(() => {
-    const prefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
-    let goalsMet = 0;
-    let totalTarget = 0;
-    let totalCompleted = 0;
-
-    habits.forEach((h) => {
-      const history = h.history || {};
-      const completed = Object.keys(history).filter((k) => k.startsWith(prefix) && history[k]).length;
-      const target = h.monthlyTarget || 20;
-      totalTarget += target;
-      totalCompleted += completed;
-      if (completed >= target) goalsMet++;
-    });
-
-    const completionRate = totalTarget > 0 ? Math.round((totalCompleted / totalTarget) * 100) : 0;
-    return { goalsMet, totalTarget, totalCompleted, completionRate };
-  }, [habits, viewYear, viewMonth]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-[rgba(14,11,32,0.88)] backdrop-blur-md animate-fade-in">
