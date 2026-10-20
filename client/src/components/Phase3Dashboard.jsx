@@ -20,6 +20,73 @@ const SCENES = [
   { name: 'Autumn ridge', key: 'peak', palette: ['#5a2d3d', '#d9733f', '#f2b35c', '#ffe3a6', '#a65a3a', '#7d3f32', '#4f2a2a', '#33201f'] }
 ];
 
+const DAILY_CHALLENGES = [
+  {
+    id: 'deep_sprint_45',
+    title: 'The Unbroken 45m Sprint',
+    desc: 'Log a continuous 45-minute focus session without switching tabs or touching your phone.',
+    reward: '+50 Dopamine XP',
+    tag: 'Focus Master',
+    icon: '⚡'
+  },
+  {
+    id: 'feynman_blitz',
+    title: 'The Feynman Blitz',
+    desc: 'Pick your toughest concept today and write a 3-bullet plain English explanation in your Scrapbook.',
+    reward: '+40 Dopamine XP',
+    tag: 'Retention',
+    icon: '🧠'
+  },
+  {
+    id: 'triple_pomodoro',
+    title: 'The Triple Strike',
+    desc: 'Complete 3 focused 25-minute study sprints with 5-minute movement breaks between each.',
+    reward: '+60 Dopamine XP',
+    tag: 'Endurance',
+    icon: '🎯'
+  },
+  {
+    id: 'two_minute_launch',
+    title: 'Zero Hesitation Launch',
+    desc: 'Sit down and start your timer within 120 seconds. Defeat resistance before it begins.',
+    reward: '+35 Dopamine XP',
+    tag: 'Momentum',
+    icon: '🚀'
+  },
+  {
+    id: 'distraction_vault',
+    title: 'Mind Fortress',
+    desc: 'Catch and park at least 2 wandering thoughts into the Distraction Pad without getting derailed.',
+    reward: '+45 Dopamine XP',
+    tag: 'Discipline',
+    icon: '🛡️'
+  },
+  {
+    id: 'speed_problem_run',
+    title: 'Problem-Solving Rush',
+    desc: 'Solve 5 practice problems or review 20 flashcards in one intense, uninterrupted burst.',
+    reward: '+50 Dopamine XP',
+    tag: 'Hard Work',
+    icon: '🔥'
+  },
+  {
+    id: 'early_bird_power',
+    title: 'Golden Hour Push',
+    desc: 'Log at least 60 total minutes of high-priority study before 3:00 PM today.',
+    reward: '+55 Dopamine XP',
+    tag: 'Strategy',
+    icon: '🌅'
+  },
+  {
+    id: 'hydration_flow',
+    title: 'Biohack & Lock In',
+    desc: 'Down 500ml of water, do a 60-second stretch, and hit a 30m uninterrupted flow block.',
+    reward: '+40 Dopamine XP',
+    tag: 'Energy',
+    icon: '💧'
+  }
+];
+
 export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
   const [now, setNow] = useState(new Date());
   const currentUser = getCurrentUser();
@@ -143,6 +210,97 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
     if (monthStats.completionRate >= 25) return { text: '🌱 Building Habit', color: 'text-amber-500' };
     return { text: '🎯 Getting Started', color: 'text-[var(--mut)]' };
   }, [monthStats.completionRate]);
+
+  // 4-Week Milestone Trend
+  const weeklyMilestones = useMemo(() => {
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prefix = todayIso.slice(0, 7);
+
+    const weeks = [
+      { label: 'Week 1', range: '1–7', start: 1, end: 7 },
+      { label: 'Week 2', range: '8–14', start: 8, end: 14 },
+      { label: 'Week 3', range: '15–21', start: 15, end: 21 },
+      { label: 'Week 4', range: `22–${daysInMonth}`, start: 22, end: daysInMonth }
+    ];
+
+    return weeks.map((w) => {
+      let completedInWeek = 0;
+      let totalPossible = habits.length * (w.end - w.start + 1);
+
+      for (let d = w.start; d <= w.end; d++) {
+        const dKey = `${prefix}-${String(d).padStart(2, '0')}`;
+        habits.forEach((h) => {
+          if (h.history && h.history[dKey]) completedInWeek++;
+        });
+      }
+
+      const rate = totalPossible > 0 ? Math.min(100, Math.round((completedInWeek / totalPossible) * 100)) : 0;
+      const isCurrentWeek = now.getDate() >= w.start && now.getDate() <= w.end;
+      const isPastWeek = now.getDate() > w.end;
+
+      return { ...w, completedInWeek, totalPossible, rate, isCurrentWeek, isPastWeek };
+    });
+  }, [habits, todayIso, now]);
+
+  // Daily Dopamine Quest logic
+  const defaultTodayChallenge = useMemo(() => {
+    let hash = 0;
+    for (let i = 0; i < todayIso.length; i++) {
+      hash = (hash * 31 + todayIso.charCodeAt(i)) >>> 0;
+    }
+    return DAILY_CHALLENGES[hash % DAILY_CHALLENGES.length];
+  }, [todayIso]);
+
+  const activeChallengeData = useMemo(() => {
+    if (state.dailyChallenge && state.dailyChallenge.date === todayIso) {
+      const match = DAILY_CHALLENGES.find((c) => c.id === state.dailyChallenge.challengeId);
+      return {
+        challenge: match || defaultTodayChallenge,
+        completed: !!state.dailyChallenge.completed
+      };
+    }
+    return {
+      challenge: defaultTodayChallenge,
+      completed: false
+    };
+  }, [state.dailyChallenge, todayIso, defaultTodayChallenge]);
+
+  const handleCompleteDailyChallenge = () => {
+    triggerConfetti();
+    playSfx('celebrate', state.mute);
+    const newXp = (state.dopamineXp || 0) + 50;
+    showToast(`⚡ Quest Complete! ${activeChallengeData.challenge.reward} unlocked! (Total: ${newXp} XP)`);
+
+    onUpdateState({
+      ...state,
+      dopamineXp: newXp,
+      dailyChallenge: {
+        date: todayIso,
+        challengeId: activeChallengeData.challenge.id,
+        completed: true,
+        completedAt: new Date().toISOString()
+      }
+    });
+  };
+
+  const handleRerollDailyChallenge = () => {
+    playSfx('click', state.mute);
+    const otherChallenges = DAILY_CHALLENGES.filter((c) => c.id !== activeChallengeData.challenge.id);
+    const nextChallenge = otherChallenges[Math.floor(Math.random() * otherChallenges.length)];
+
+    showToast(`🎲 Rerolled Mission: "${nextChallenge.title}"`);
+    onUpdateState({
+      ...state,
+      dailyChallenge: {
+        date: todayIso,
+        challengeId: nextChallenge.id,
+        completed: false,
+        completedAt: null
+      }
+    });
+  };
 
   // Goal calculations
   const defaultGoal = state.goal || 2;
@@ -1224,6 +1382,57 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
                   </div>
                 </div>
 
+                {/* 4-Week Milestone Sparklines */}
+                <div className="p-3.5 rounded-2xl bg-[var(--surf2)]/70 border border-[var(--line)]">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--mut)]">
+                      4-Week Milestone Sparklines
+                    </span>
+                    <span className="text-[10px] text-[var(--mut)]">
+                      Week-over-week consistency
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {weeklyMilestones.map((wm) => (
+                      <div
+                        key={wm.label}
+                        className={`p-2 rounded-xl border transition-all ${
+                          wm.isCurrentWeek
+                            ? 'bg-[var(--surf)] border-[var(--lamp)]/50 shadow-xs'
+                            : 'bg-[var(--surf)]/50 border-[var(--line)]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[11px] mb-1">
+                          <span className={`font-semibold ${wm.isCurrentWeek ? 'text-[var(--lamp)]' : 'text-[var(--ink)]'}`}>
+                            {wm.label} <span className="text-[9px] text-[var(--mut)] font-normal">({wm.range})</span>
+                          </span>
+                          <span
+                            className="font-bold text-[10px]"
+                            style={{
+                              color: wm.rate >= 75 ? '#10b981' : wm.rate >= 40 ? 'var(--lamp)' : 'var(--mut)'
+                            }}
+                          >
+                            {wm.rate}%
+                          </span>
+                        </div>
+                        <div className="h-1.5 w-full bg-[var(--line)]/60 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              wm.isCurrentWeek
+                                ? 'bg-gradient-to-r from-[var(--lamp)] to-emerald-400'
+                                : 'bg-emerald-500/80'
+                            }`}
+                            style={{ width: `${Math.max(wm.rate > 0 ? 8 : 0, wm.rate)}%` }}
+                          />
+                        </div>
+                        <span className="text-[9px] text-[var(--mut)] block mt-1">
+                          {wm.completedInWeek} check-ins
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Quick Interactive Habit Chips */}
                 <div className="p-3.5 rounded-2xl bg-[var(--surf2)]/50 border border-[var(--line)] flex flex-wrap items-center gap-2">
                   <span className="text-xs text-[var(--mut)] font-medium mr-1">Habits today:</span>
@@ -1274,6 +1483,89 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
             </div>
           </div>
         )}
+      </section>
+
+      {/* Daily Dopamine Study Quest (Daily Challenge) */}
+      <section className="relative overflow-hidden rounded-[26px] border border-[var(--line)] bg-[var(--surf)] p-5 sm:p-6 mt-6 transition-all shadow-sm">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-amber-500/10 via-[var(--lamp)]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex items-start justify-between flex-wrap gap-3 mb-3">
+          <div className="flex items-center gap-3">
+            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400/20 to-[var(--lamp)]/20 border border-amber-400/30 flex items-center justify-center text-2xl shadow-xs">
+              {activeChallengeData.challenge.icon}
+            </span>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                  ⚡ DAILY DOPAMINE QUEST
+                </span>
+                <span className="text-[10px] font-semibold text-[var(--mut)] px-2 py-0.5 rounded-md bg-[var(--surf2)] border border-[var(--line)]">
+                  {activeChallengeData.challenge.tag}
+                </span>
+                <span className="text-[10px] font-bold text-emerald-400 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                  {activeChallengeData.challenge.reward}
+                </span>
+              </div>
+              <h3 className="serif text-lg sm:text-xl font-normal text-[var(--ink)] mt-1">
+                {activeChallengeData.challenge.title}
+              </h3>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {!activeChallengeData.completed && (
+              <button
+                type="button"
+                onClick={handleRerollDailyChallenge}
+                className="px-3 py-1.5 rounded-xl border border-[var(--line)] bg-[var(--surf2)] hover:border-[var(--lamp)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95"
+                title="Reroll for a different challenge today"
+              >
+                <span>🎲</span>
+                <span>Reroll Quest</span>
+              </button>
+            )}
+            <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[var(--surf2)] border border-[var(--line)] text-[var(--lamp)] flex items-center gap-1">
+              <span>⚡</span>
+              <span>{state.dopamineXp || 0} XP</span>
+            </span>
+          </div>
+        </div>
+
+        <p className="text-xs sm:text-sm text-[var(--mut)] mb-4 max-w-2xl leading-relaxed">
+          {activeChallengeData.challenge.desc}
+        </p>
+
+        <div className="flex items-center justify-between flex-wrap gap-3 pt-3 border-t border-[var(--line)]/60">
+          <div className="flex items-center gap-2 text-xs text-[var(--mut)]">
+            <span>Status:</span>
+            {activeChallengeData.completed ? (
+              <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold">
+                <span>✓ Quest Completed for today!</span>
+                <span className="text-[10px] opacity-75">(Dopamine bonus claimed)</span>
+              </span>
+            ) : (
+              <span className="text-amber-400 font-medium">In Progress — complete the mission to claim XP!</span>
+            )}
+          </div>
+
+          <div>
+            {activeChallengeData.completed ? (
+              <div className="px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-1.5 shadow-xs">
+                <span>🌟</span>
+                <span>Mission Cleared (+50 XP)</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleCompleteDailyChallenge}
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-[var(--lamp)] to-emerald-400 text-[#1b1730] text-xs font-bold shadow-md hover:brightness-110 active:scale-95 cursor-pointer transition-all flex items-center gap-1.5"
+              >
+                <span>⚡</span>
+                <span>Complete Quest & Claim XP</span>
+              </button>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* Action Buttons: Add Hours & Call It a Day */}
