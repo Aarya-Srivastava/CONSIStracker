@@ -387,8 +387,16 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
     return domainChallenges[hash % domainChallenges.length];
   }, [todayIso, currentDomainId, domainChallenges]);
 
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+
   const activeChallengeData = useMemo(() => {
     if (state.dailyChallenge && state.dailyChallenge.date === todayIso) {
+      if (state.customAiChallenge && state.customAiChallenge.id === state.dailyChallenge.challengeId) {
+        return {
+          challenge: state.customAiChallenge,
+          completed: !!state.dailyChallenge.completed
+        };
+      }
       const match = DAILY_CHALLENGES.find((c) => c.id === state.dailyChallenge.challengeId);
       return {
         challenge: match || defaultTodayChallenge,
@@ -399,7 +407,39 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
       challenge: defaultTodayChallenge,
       completed: false
     };
-  }, [state.dailyChallenge, todayIso, defaultTodayChallenge]);
+  }, [state.dailyChallenge, state.customAiChallenge, todayIso, defaultTodayChallenge]);
+
+  const handleGenerateAiChallenge = async () => {
+    setIsAiGenerating(true);
+    playSfx('click', state.mute);
+    showToast('🤖 Asking ChatGPT to generate a custom quest...');
+
+    try {
+      const res = await api.generateAiChallenge(currentDomainId, currentDomain.name);
+      if (res.success && res.challenge) {
+        triggerConfetti();
+        playSfx('celebrate', state.mute);
+        showToast(`✨ ChatGPT Generated: "${res.challenge.title}"!`);
+
+        onUpdateState({
+          ...state,
+          customAiChallenge: res.challenge,
+          dailyChallenge: {
+            date: todayIso,
+            challengeId: res.challenge.id,
+            completed: false,
+            completedAt: null
+          }
+        });
+      } else {
+        showToast(res.message || 'AI challenge generation failed');
+      }
+    } catch {
+      showToast('Error connecting to ChatGPT');
+    } finally {
+      setIsAiGenerating(false);
+    }
+  };
 
   const handleCompleteDailyChallenge = () => {
     triggerConfetti();
@@ -1771,15 +1811,27 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
 
           <div className="flex items-center gap-2">
             {!activeChallengeData.completed && (
-              <button
-                type="button"
-                onClick={handleRerollDailyChallenge}
-                className="px-3 py-1.5 rounded-xl border border-[var(--line)] bg-[var(--surf2)] hover:border-[var(--lamp)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95"
-                title="Reroll for a different challenge today"
-              >
-                <span>🎲</span>
-                <span>Reroll Quest</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleGenerateAiChallenge}
+                  disabled={isAiGenerating}
+                  className="px-3 py-1.5 rounded-xl border border-purple-500/40 bg-purple-500/15 hover:bg-purple-500/25 text-xs font-semibold text-purple-200 cursor-pointer transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 shadow-xs"
+                  title="Generate a dynamic daily challenge using ChatGPT API"
+                >
+                  <span>🤖</span>
+                  <span>{isAiGenerating ? 'AI Thinking...' : 'ChatGPT AI Quest'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRerollDailyChallenge}
+                  className="px-3 py-1.5 rounded-xl border border-[var(--line)] bg-[var(--surf2)] hover:border-[var(--lamp)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95"
+                  title="Reroll for a different challenge today"
+                >
+                  <span>🎲</span>
+                  <span>Reroll Quest</span>
+                </button>
+              </>
             )}
             <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[var(--surf2)] border border-[var(--line)] text-[var(--lamp)] flex items-center gap-1">
               <span>⚡</span>

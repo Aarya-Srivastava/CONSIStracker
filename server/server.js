@@ -247,6 +247,153 @@ app.get('/api/analytics/stats', async (req, res) => {
   }
 });
 
+// ---------------- CHATGPT OPENAI INTEGRATION ----------------
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+
+// Generate dynamic challenge using ChatGPT
+app.post('/api/ai/challenge', async (req, res) => {
+  const { domain, domainName, level } = req.body;
+  const targetDomain = domainName || domain || 'Software Engineering & DSA';
+
+  if (!OPENAI_API_KEY) {
+    // Curated AI generator fallback when API key is not configured in environment
+    const aiPool = [
+      {
+        id: 'ai_curated_' + Date.now(),
+        domain: domain || 'swe_dsa',
+        title: `${targetDomain} Edge-Case Crusher`,
+        desc: `Write down 3 boundary constraints & edge cases for your current ${targetDomain} project or problem set and verify them.`,
+        reward: '+70 Dopamine XP',
+        tag: 'ChatGPT AI Quest',
+        icon: '🤖'
+      },
+      {
+        id: 'ai_curated_' + (Date.now() + 1),
+        domain: domain || 'swe_dsa',
+        title: `30m ${targetDomain} Deep Recall Drill`,
+        desc: `Without checking any reference or documentation, reconstruct the core architecture or algorithm formula on blank paper.`,
+        reward: '+65 Dopamine XP',
+        tag: 'ChatGPT AI Quest',
+        icon: '⚡'
+      },
+      {
+        id: 'ai_curated_' + (Date.now() + 2),
+        domain: domain || 'swe_dsa',
+        title: `${targetDomain} Architecture Refactor`,
+        desc: `Identify 1 bottleneck or redundant logic block in your ${targetDomain} work and optimize its efficiency.`,
+        reward: '+75 Dopamine XP',
+        tag: 'ChatGPT AI Quest',
+        icon: '✨'
+      }
+    ];
+    const picked = aiPool[Math.floor(Math.random() * aiPool.length)];
+    return res.json({
+      success: true,
+      source: 'smart_ai',
+      challenge: picked,
+      message: 'Add OPENAI_API_KEY in Render environment variables for live dynamic ChatGPT prompts!'
+    });
+  }
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are an elite study coach in CONSIStracker. Generate 1 exciting, actionable daily study challenge for the user. Return ONLY a valid JSON object with keys: "title" (string, max 6 words), "desc" (string, 15-25 words actionable instruction), "reward" (e.g. "+70 Dopamine XP"), "tag" (e.g. "AI Quest"), "icon" (1 single emoji).'
+          },
+          {
+            role: 'user',
+            content: `Generate a fresh daily challenge for someone whose focus domain is "${targetDomain}". Level: ${level || 'Intermediate'}. Make it motivating and concrete.`
+          }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.8
+      })
+    });
+
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.error.message || 'OpenAI error');
+    }
+    const parsed = JSON.parse(data.choices[0].message.content);
+    return res.json({
+      success: true,
+      source: 'chatgpt',
+      challenge: {
+        id: 'ai_' + Date.now(),
+        domain: domain || 'swe_dsa',
+        title: parsed.title || `${targetDomain} AI Gauntlet`,
+        desc: parsed.desc || `Complete focused deep work in ${targetDomain}.`,
+        reward: parsed.reward || '+70 Dopamine XP',
+        tag: parsed.tag || 'ChatGPT Quest',
+        icon: parsed.icon || '🤖'
+      }
+    });
+  } catch (err) {
+    console.error('ChatGPT API error:', err);
+    return res.status(500).json({ success: false, message: 'ChatGPT generation failed: ' + err.message });
+  }
+});
+
+// Interactive AI Study Coach Chat
+app.post('/api/ai/coach', async (req, res) => {
+  const { message, domain, history } = req.body;
+  if (!message || !message.trim()) {
+    return res.status(400).json({ success: false, message: 'Message is required' });
+  }
+
+  if (!OPENAI_API_KEY) {
+    return res.json({
+      success: true,
+      reply: `Hi! I'm Diano AI, your study coach. 🦖 To connect me with live ChatGPT, please add your OPENAI_API_KEY into your Render Environment Variables! In the meantime, remember: consistency compounds every single day. Keep crushing your ${domain || 'study'} goals! ✨`
+    });
+  }
+
+  try {
+    const messages = [
+      {
+        role: 'system',
+        content: `You are Diano, the encouraging, slightly witty green dinosaur study mentor in the CONSIStracker app. Help the user stay consistent with focus, answer questions about ${domain || 'their studies and tech'}, explain difficult concepts simply (Feynman method), and keep replies concise, friendly, and motivational (under 120 words).`
+      },
+      ...(Array.isArray(history) ? history.slice(-6) : []),
+      { role: 'user', content: message }
+    ];
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages,
+        max_tokens: 350,
+        temperature: 0.7
+      })
+    });
+
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.error.message || 'OpenAI error');
+    }
+    const reply = data.choices[0].message.content;
+    return res.json({ success: true, reply });
+  } catch (err) {
+    console.error('AI Coach error:', err);
+    return res.status(500).json({ success: false, message: 'AI coach error: ' + err.message });
+  }
+});
+
 // ---------------- DATA ROUTES (PER-USER) ----------------
 
 // Get user state

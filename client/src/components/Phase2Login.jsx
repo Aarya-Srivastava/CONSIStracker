@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../utils/api';
+import { DOMAINS } from './WelcomeModal';
 
 export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
+  const [selectedDomain, setSelectedDomain] = useState('swe_dsa');
   const [username, setUsername] = useState('default');
   const [password, setPassword] = useState('');
   const [isRegisterMode, setIsRegisterMode] = useState(false);
@@ -126,7 +128,7 @@ export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
 
   const handleContinueToDashboard = () => {
     setShowModal(false);
-    onUnlockSuccess();
+    onUnlockSuccess(selectedDomain);
   };
 
   const handleResetPasswordSubmit = async (e) => {
@@ -305,6 +307,40 @@ export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
 
           {/* Form with BOTH Username and Password inputs */}
           <form id="p2-form" onSubmit={handleSubmit} noValidate autoComplete="off" className="px-0 sm:px-4 md:px-6">
+            {/* PRE-SIGN-IN FOCUS DOMAIN RECOMMENDATION */}
+            <div className="mb-5 p-3 rounded-2xl bg-black/35 border border-white/20 shadow-inner">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <span className="text-xs font-semibold text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>🎯 Choose Your Focus Domain</span>
+                </span>
+                <span className="text-[10px] text-amber-300 font-medium">Daily challenges adapt to this</span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {DOMAINS.map((dom) => {
+                  const isSel = selectedDomain === dom.id;
+                  return (
+                    <button
+                      key={dom.id}
+                      type="button"
+                      onClick={() => setSelectedDomain(dom.id)}
+                      className={`p-2 rounded-xl border text-left cursor-pointer transition-all flex items-center gap-2 ${
+                        isSel
+                          ? 'border-[var(--lamp)] bg-white/20 shadow-md ring-1 ring-[var(--lamp)] scale-102'
+                          : 'border-white/10 bg-black/20 hover:border-white/30 text-gray-300'
+                      }`}
+                    >
+                      <span className="text-xl">{dom.icon}</span>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-white truncate">{dom.shortName}</div>
+                        <div className="text-[9px] text-gray-300 truncate">{dom.badge || 'Domain'}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* 1. USERNAME INPUT BOX */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5 px-1">

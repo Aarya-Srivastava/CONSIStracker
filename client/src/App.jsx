@@ -83,13 +83,16 @@ export default function App() {
   };
 
   // Transition from Phase 2 to Phase 3 (when password verified)
-  const handleUnlockSuccess = async () => {
+  const handleUnlockSuccess = async (chosenDomain) => {
     const data = await loadUserData();
+    const updated = {
+      ...(data || {}),
+      userDomain: chosenDomain || (data && data.userDomain) || 'swe_dsa'
+    };
+    handleUpdateState(updated);
     setPhase(3);
-    // Show welcome modal if first time visit
-    if (data && !data.welcomed) {
-      setTimeout(() => setShowWelcome(true), 600);
-    }
+    // Show welcome tour modal
+    setTimeout(() => setShowWelcome(true), 400);
   };
 
   const handleFinishWelcome = ({ selectedGoal, selectedDomain }) => {

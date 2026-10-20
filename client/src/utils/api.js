@@ -301,5 +301,33 @@ export const api = {
     } catch (err) {
       return { success: false, stats: { totalVisits: 0, todayVisits: 0, totalUsers: 0, totalFeedbacks: 0 } };
     }
+  },
+
+  // Generate ChatGPT AI daily challenge
+  async generateAiChallenge(domain, domainName) {
+    try {
+      const res = await fetch(`${API_BASE}/ai/challenge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain, domainName })
+      });
+      return await res.json();
+    } catch (err) {
+      return { success: false, message: 'Could not connect to AI engine' };
+    }
+  },
+
+  // Ask Diano ChatGPT AI Study Coach
+  async askAiCoach(message, domain, history = []) {
+    try {
+      const res = await fetch(`${API_BASE}/ai/coach`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, domain, history })
+      });
+      return await res.json();
+    } catch (err) {
+      return { success: false, reply: 'AI coach is currently unreachable' };
+    }
   }
 };
