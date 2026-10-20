@@ -14,52 +14,28 @@ const HABIT_COLORS = [
   '#84cc16'  // Lime
 ];
 
+const SAMPLE_HABITS = [
+  { name: 'Wake up at 7 AM', icon: '⏰', color: '#10b981', monthlyTarget: 25 },
+  { name: 'Drink 2L Water', icon: '💧', color: '#06b6d4', monthlyTarget: 28 },
+  { name: 'Meditate & Breathe', icon: '🧘', color: '#a855f7', monthlyTarget: 20 },
+  { name: 'Make Bed', icon: '🛏️', color: '#f59e0b', monthlyTarget: 25 },
+  { name: 'Go for a walk / Stretch', icon: '🏃‍♂️', color: '#10b981', monthlyTarget: 22 },
+  { name: 'Deep Work / Focus Study', icon: '💻', color: '#3b82f6', monthlyTarget: 22 },
+  { name: 'Read for 20 minutes', icon: '📚', color: '#ec4899', monthlyTarget: 20 },
+  { name: 'Write in journal', icon: '✍️', color: '#f43f5e', monthlyTarget: 15 },
+  { name: 'Go to bed by 11 PM', icon: '💤', color: '#6366f1', monthlyTarget: 25 }
+];
+
+const WEEKDAY_NAMES = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+
 function getDaysInMonth(year, month) {
   return new Date(year, month + 1, 0).getDate();
-}
-
-function getFirstDayOfWeek(year, month) {
-  // 0 = Sunday, 1 = Monday, etc. Adjust so Monday is 0
-  const day = new Date(year, month, 1).getDay();
-  return (day + 6) % 7; // Monday = 0, Sunday = 6
 }
 
 function formatDateKey(year, month, day) {
   const m = String(month + 1).padStart(2, '0');
   const d = String(day).padStart(2, '0');
   return `${year}-${m}-${d}`;
-}
-
-function calculateStreak(history = {}) {
-  const today = new Date();
-  let streak = 0;
-  let checkDate = new Date(today);
-
-  // Check if today is completed, if not check if yesterday was completed
-  const todayStr = today.toISOString().slice(0, 10);
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().slice(0, 10);
-
-  if (!history[todayStr] && !history[yesterdayStr]) {
-    return 0;
-  }
-
-  if (!history[todayStr]) {
-    checkDate.setDate(checkDate.getDate() - 1);
-  }
-
-  while (true) {
-    const key = checkDate.toISOString().slice(0, 10);
-    if (history[key]) {
-      streak++;
-      checkDate.setDate(checkDate.getDate() - 1);
-    } else {
-      break;
-    }
-  }
-
-  return streak;
 }
 
 export default function HabitTrackerModal({
@@ -83,13 +59,35 @@ export default function HabitTrackerModal({
   const [formMonthlyTarget, setFormMonthlyTarget] = useState(20);
   const [formError, setFormError] = useState('');
 
+  // All Hooks must be at top level
   const todayStr = useMemo(() => now.toISOString().slice(0, 10), [now]);
   const daysInCurrentMonth = useMemo(() => getDaysInMonth(viewYear, viewMonth), [viewYear, viewMonth]);
   const monthName = useMemo(() => {
     return new Date(viewYear, viewMonth, 1).toLocaleString('default', { month: 'long', year: 'numeric' });
   }, [viewYear, viewMonth]);
 
-  // Month Statistics (must be declared before any early return)
+  // Days array metadata for the selected month
+  const monthDays = useMemo(() => {
+    const list = [];
+    for (let d = 1; d <= daysInCurrentMonth; d++) {
+      const dateObj = new Date(viewYear, viewMonth, d);
+      const dayOfWeekName = WEEKDAY_NAMES[dateObj.getDay()];
+      const dateKey = formatDateKey(viewYear, viewMonth, d);
+      const isToday =
+        viewYear === now.getFullYear() &&
+        viewMonth === now.getMonth() &&
+        d === now.getDate();
+      const isPast =
+        viewYear < now.getFullYear() ||
+        (viewYear === now.getFullYear() && viewMonth < now.getMonth()) ||
+        (viewYear === now.getFullYear() && viewMonth === now.getMonth() && d < now.getDate());
+
+      list.push({ dayNum: d, dayOfWeekName, dateKey, isToday, isPast });
+    }
+    return list;
+  }, [viewYear, viewMonth, daysInCurrentMonth, now]);
+
+  // Overall Month Statistics
   const monthStats = useMemo(() => {
     const prefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
     let goalsMet = 0;
@@ -105,7 +103,7 @@ export default function HabitTrackerModal({
       if (completed >= target) goalsMet++;
     });
 
-    const completionRate = totalTarget > 0 ? Math.round((totalCompleted / totalTarget) * 100) : 0;
+    const completionRate = totalTarget > 0 ? Math.min(100, Math.round((totalCompleted / totalTarget) * 100)) : 0;
     return { goalsMet, totalTarget, totalCompleted, completionRate };
   }, [habits, viewYear, viewMonth]);
 
@@ -152,6 +150,20 @@ export default function HabitTrackerModal({
     setFormMonthlyTarget(habit.monthlyTarget || 20);
     setFormError('');
     setIsFormOpen(true);
+  };
+
+  const handleLoadSampleHabits = () => {
+    const created = SAMPLE_HABITS.map((s, idx) => ({
+      id: 'h_' + Date.now() + '_' + idx,
+      name: s.name,
+      icon: s.icon,
+      color: s.color,
+      monthlyTarget: s.monthlyTarget,
+      createdAt: new Date().toISOString(),
+      history: {}
+    }));
+    onSaveHabits([...habits, ...created]);
+    if (showToast) showToast('Loaded sample habit goals');
   };
 
   const handleSaveForm = (e) => {
@@ -203,8 +215,7 @@ export default function HabitTrackerModal({
     }
   };
 
-  const toggleDay = (habit, dayNum) => {
-    const dateKey = formatDateKey(viewYear, viewMonth, dayNum);
+  const toggleDay = (habit, dateKey) => {
     const history = { ...(habit.history || {}) };
     const wasCompleted = !!history[dateKey];
     const isNowCompleted = !wasCompleted;
@@ -230,294 +241,379 @@ export default function HabitTrackerModal({
     onSaveHabits(updated);
   };
 
+  // Donut Gauge math
+  const radius = 38;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference * (1 - monthStats.completionRate / 100);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-[rgba(14,11,32,0.88)] backdrop-blur-md animate-fade-in">
-      <div className="bg-[var(--surf)] text-[var(--ink)] border border-[var(--line)] rounded-[28px] w-full max-w-4xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="p-5 sm:p-6 border-b border-[var(--line)] flex items-center justify-between flex-wrap gap-4 bg-[var(--surf)]/80">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <span className="text-2xl sm:text-3xl">🎯</span>
-              <div>
-                <h2 className="serif text-xl sm:text-2xl font-normal">Habit Tracker & Monthly Goals</h2>
-                <p className="text-xs text-[var(--mut)]">
-                  Consistency beats intensity. Set your monthly targets and check off your days.
-                </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-[rgba(14,11,32,0.92)] backdrop-blur-md animate-fade-in">
+      <div className="bg-[var(--surf)] text-[var(--ink)] border border-[var(--line)] rounded-[26px] w-full max-w-[96vw] xl:max-w-7xl max-h-[94vh] flex flex-col shadow-2xl overflow-hidden">
+        
+        {/* Top Header Section with Donut Gauge (As shown in screenshot) */}
+        <div className="p-4 sm:p-6 border-b border-[var(--line)] bg-[var(--surf2)]/70 flex flex-wrap items-center justify-between gap-4">
+          
+          {/* Left: Circular Donut Gauge */}
+          <div className="flex items-center gap-4">
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center flex-shrink-0">
+              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                <circle
+                  cx="50"
+                  cy="50"
+                  r={radius}
+                  fill="none"
+                  stroke="var(--line)"
+                  strokeWidth="9"
+                />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r={radius}
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth="9"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                  className="transition-all duration-700"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="serif text-xl sm:text-2xl font-bold text-[var(--ink)]">
+                  {monthStats.completionRate}%
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--mut)]">
+                Monthly Goal Adherence
+              </span>
+              <div className="text-xs text-[var(--mut)] mt-0.5">
+                <strong className="text-emerald-400 font-semibold">{monthStats.goalsMet}</strong> of {habits.length} monthly goals achieved
+              </div>
+              <div className="text-xs text-[var(--mut)]">
+                <strong className="text-[var(--lamp)] font-semibold">{monthStats.totalCompleted}</strong> days completed this month
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Center: Title & Month Navigation */}
+          <div className="flex flex-col items-center text-center">
+            <h1 className="serif text-2xl sm:text-3xl font-normal tracking-wide text-[var(--ink)] uppercase">
+              Daily Tasks and Goals
+            </h1>
+            
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                type="button"
+                onClick={handlePrevMonth}
+                className="w-7 h-7 rounded-lg border border-[var(--line)] bg-[var(--surf)] hover:bg-[var(--line)] flex items-center justify-center text-[var(--ink)] cursor-pointer text-sm"
+                title="Previous month"
+              >
+                ‹
+              </button>
+              <span className="font-semibold text-xs sm:text-sm text-[var(--ink)] min-w-[140px] text-center">
+                {monthName}
+              </span>
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                className="w-7 h-7 rounded-lg border border-[var(--line)] bg-[var(--surf)] hover:bg-[var(--line)] flex items-center justify-center text-[var(--ink)] cursor-pointer text-sm"
+                title="Next month"
+              >
+                ›
+              </button>
+              {(viewMonth !== now.getMonth() || viewYear !== now.getFullYear()) && (
+                <button
+                  type="button"
+                  onClick={handleJumpToToday}
+                  className="px-2.5 py-1 rounded-lg bg-[var(--lamp)]/25 text-[var(--lamp)] font-semibold text-[11px] cursor-pointer hover:bg-[var(--lamp)]/35"
+                >
+                  Today
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {habits.length === 0 && (
+              <button
+                type="button"
+                onClick={handleLoadSampleHabits}
+                className="px-3 py-1.5 rounded-xl border border-[var(--line)] bg-[var(--surf)] hover:border-[var(--lamp)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all"
+              >
+                + Load Samples
+              </button>
+            )}
+
             <button
               type="button"
               onClick={openAddForm}
-              className="px-3.5 py-1.5 rounded-xl bg-[var(--lamp)] text-[#1b1730] font-semibold text-xs transition-all hover:brightness-105 active:scale-95 cursor-pointer shadow flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-[var(--lamp)] text-[#1b1730] font-semibold text-xs transition-all hover:brightness-105 active:scale-95 cursor-pointer shadow-md flex items-center gap-1.5"
             >
               <span>+</span>
               <span>New Habit</span>
             </button>
+
             <button
               type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-full border border-[var(--line)] bg-[var(--surf2)] hover:bg-[var(--line)] text-[var(--mut)] hover:text-[var(--ink)] flex items-center justify-center transition-all cursor-pointer text-sm"
+              className="w-8 h-8 rounded-full border border-[var(--line)] bg-[var(--surf2)] hover:bg-[var(--line)] text-[var(--mut)] hover:text-[var(--ink)] flex items-center justify-center transition-all cursor-pointer text-sm ml-1"
             >
               ✕
             </button>
           </div>
         </div>
 
-        {/* Month Navigation & Stats Bar */}
-        <div className="px-5 py-3 sm:px-6 bg-[var(--surf2)]/60 border-b border-[var(--line)] flex flex-wrap items-center justify-between gap-3 text-xs">
-          {/* Navigation */}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handlePrevMonth}
-              className="w-7 h-7 rounded-lg border border-[var(--line)] bg-[var(--surf)] hover:bg-[var(--line)] flex items-center justify-center text-[var(--ink)] cursor-pointer"
-              title="Previous month"
-            >
-              ‹
-            </button>
-            <span className="font-semibold text-sm text-[var(--ink)] min-w-[130px] text-center">{monthName}</span>
-            <button
-              type="button"
-              onClick={handleNextMonth}
-              className="w-7 h-7 rounded-lg border border-[var(--line)] bg-[var(--surf)] hover:bg-[var(--line)] flex items-center justify-center text-[var(--ink)] cursor-pointer"
-              title="Next month"
-            >
-              ›
-            </button>
-            {(viewMonth !== now.getMonth() || viewYear !== now.getFullYear()) && (
-              <button
-                type="button"
-                onClick={handleJumpToToday}
-                className="px-2 py-1 rounded-lg bg-[var(--lamp)]/20 text-[var(--lamp)] hover:bg-[var(--lamp)]/30 font-medium cursor-pointer text-[11px]"
-              >
-                Today
-              </button>
-            )}
-          </div>
-
-          {/* Quick Metrics */}
-          <div className="flex items-center gap-4 text-[var(--mut)]">
-            <div>
-              Active Habits: <span className="font-semibold text-[var(--ink)]">{habits.length}</span>
-            </div>
-            <div>
-              Monthly Goals Achieved:{' '}
-              <span className="font-semibold text-emerald-400">
-                {monthStats.goalsMet} / {habits.length}
-              </span>
-            </div>
-            <div>
-              Month Adherence:{' '}
-              <span className="font-semibold text-[var(--lamp)]">{monthStats.completionRate}%</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Habits List */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        {/* The Spreadsheet Matrix View (As requested in image) */}
+        <div className="flex-1 overflow-x-auto overflow-y-auto p-3 sm:p-5">
           {habits.length === 0 ? (
-            <div className="py-16 text-center border-2 border-dashed border-[var(--line)] rounded-2xl p-8">
-              <span className="text-4xl block mb-2">🌱</span>
-              <h3 className="serif text-lg font-normal text-[var(--ink)] mb-1">No habits tracked yet</h3>
-              <p className="text-xs text-[var(--mut)] max-w-sm mx-auto mb-4">
-                Build unstoppable momentum. Create habits like "Morning Run", "Drink 2L Water", or "Read 20 pages" with
-                monthly targets.
+            <div className="py-20 text-center border-2 border-dashed border-[var(--line)] rounded-2xl p-8">
+              <span className="text-4xl block mb-2">🎯</span>
+              <h3 className="serif text-xl font-normal mb-1">No habits set yet</h3>
+              <p className="text-xs text-[var(--mut)] max-w-md mx-auto mb-4">
+                Add habits like "Wake up at 7 AM", "Drink 2L Water", "Study DSA", or load the sample set to get this exact daily matrix.
               </p>
-              <button
-                type="button"
-                onClick={openAddForm}
-                className="px-4 py-2 rounded-xl bg-[var(--lamp)] text-[#1b1730] font-semibold text-xs shadow-md hover:brightness-105 cursor-pointer"
-              >
-                + Create Your First Habit
-              </button>
+              <div className="flex items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={openAddForm}
+                  className="px-4 py-2 rounded-xl bg-[var(--lamp)] text-[#1b1730] font-semibold text-xs shadow-md hover:brightness-105 cursor-pointer"
+                >
+                  + Add Custom Habit
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLoadSampleHabits}
+                  className="px-4 py-2 rounded-xl bg-[var(--surf2)] border border-[var(--line)] text-xs font-semibold hover:border-[var(--lamp)] cursor-pointer"
+                >
+                  + Load 9 Sample Habits
+                </button>
+              </div>
             </div>
           ) : (
-            habits.map((habit) => {
-              const prefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
-              const history = habit.history || {};
-              const completedDaysThisMonth = Object.keys(history).filter(
-                (k) => k.startsWith(prefix) && history[k]
-              ).length;
-              const target = habit.monthlyTarget || 20;
-              const progressPct = Math.min(100, Math.round((completedDaysThisMonth / target) * 100));
-              const isGoalAchieved = completedDaysThisMonth >= target;
-              const streak = calculateStreak(history);
-              const isTodayCompleted = !!history[todayStr];
-
-              return (
-                <div
-                  key={habit.id}
-                  className="p-4 sm:p-5 rounded-2xl bg-[var(--surf2)] border border-[var(--line)] transition-all hover:border-[var(--line2)] shadow-sm"
-                >
-                  {/* Habit Top Bar */}
-                  <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-sm"
-                        style={{ backgroundColor: `${habit.color}25`, border: `1px solid ${habit.color}50` }}
-                      >
-                        {habit.icon || '💧'}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-sm sm:text-base text-[var(--ink)]">{habit.name}</h4>
-                          {isGoalAchieved && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1">
-                              <span>🌟</span> Goal Reached!
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-[var(--mut)] flex items-center gap-2 mt-0.5">
-                          <span>
-                            Monthly Target: <strong className="text-[var(--ink)]">{target} days</strong>
-                          </span>
-                          <span>•</span>
-                          <span>
-                            Completed:{' '}
-                            <strong style={{ color: habit.color }}>
-                              {completedDaysThisMonth} / {target} days ({progressPct}%)
-                            </strong>
-                          </span>
-                          {streak > 0 && (
-                            <>
-                              <span>•</span>
-                              <span className="text-amber-400 font-semibold flex items-center gap-0.5">
-                                🔥 {streak} day streak
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Action buttons */}
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => toggleDay(habit, now.getDate())}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-1.5 border ${
-                          isTodayCompleted
-                            ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 shadow-sm'
-                            : 'bg-[var(--surf)] border-[var(--line)] text-[var(--mut)] hover:text-[var(--ink)]'
+            <div className="border border-[var(--line)] rounded-2xl overflow-hidden bg-[var(--surf)] shadow-sm">
+              <table className="w-full border-collapse text-xs">
+                <thead>
+                  {/* Row 1: Weekday Names (MON, TUE, WED, ...) */}
+                  <tr className="bg-[#f7d6d0]/25 dark:bg-[#341e33]/50 text-[var(--ink)] border-b border-[var(--line)]">
+                    <th className="sticky left-0 z-20 bg-[var(--surf2)] p-2.5 text-left font-semibold text-xs border-r border-[var(--line)] min-w-[200px] sm:min-w-[240px]">
+                      HABIT & MONTHLY GOAL
+                    </th>
+                    {monthDays.map((d) => (
+                      <th
+                        key={d.dayNum}
+                        className={`p-1.5 text-center font-bold text-[10px] sm:text-[11px] min-w-[32px] sm:min-w-[36px] border-r border-[var(--line)]/60 ${
+                          d.isToday ? 'bg-teal-500/30 text-teal-300 font-extrabold' : 'text-[var(--mut)]'
                         }`}
-                        title="Quick toggle for today"
                       >
-                        <span>{isTodayCompleted ? '✓ Done Today' : '○ Mark Today'}</span>
-                      </button>
+                        {d.dayOfWeekName}
+                      </th>
+                    ))}
+                    <th className="p-2 text-center font-semibold text-[11px] min-w-[90px] bg-[var(--surf2)]">
+                      MONTHLY GOAL
+                    </th>
+                  </tr>
 
-                      <button
-                        type="button"
-                        onClick={() => openEditForm(habit)}
-                        className="p-1.5 rounded-lg text-xs text-[var(--mut)] hover:text-[var(--ink)] hover:bg-[var(--line)] cursor-pointer"
-                        title="Edit habit"
+                  {/* Row 2: Day Numbers (1, 2, 3, ... 31) */}
+                  <tr className="bg-[#f7d6d0]/15 dark:bg-[#25192b]/40 text-[var(--ink)] border-b border-[var(--line)] font-semibold">
+                    <th className="sticky left-0 z-20 bg-[var(--surf2)] p-2 text-left text-[11px] text-[var(--mut)] border-r border-[var(--line)] font-normal">
+                      Target & Progress
+                    </th>
+                    {monthDays.map((d) => (
+                      <th
+                        key={d.dayNum}
+                        className={`p-1 text-center text-xs border-r border-[var(--line)]/60 ${
+                          d.isToday ? 'bg-teal-500/40 text-teal-200 font-bold' : ''
+                        }`}
                       >
-                        ✎
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteHabit(habit.id)}
-                        className="p-1.5 rounded-lg text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 cursor-pointer"
-                        title="Delete habit"
+                        {d.dayNum}
+                      </th>
+                    ))}
+                    <th className="p-1 text-center text-[10px] text-[var(--mut)] bg-[var(--surf2)] font-normal">
+                      Target (Days)
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {habits.map((habit, rIdx) => {
+                    const prefix = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}`;
+                    const history = habit.history || {};
+                    const completedDays = Object.keys(history).filter(
+                      (k) => k.startsWith(prefix) && history[k]
+                    ).length;
+                    const target = habit.monthlyTarget || 20;
+                    const isGoalAchieved = completedDays >= target;
+                    const progressPct = Math.min(100, Math.round((completedDays / target) * 100));
+
+                    return (
+                      <tr
+                        key={habit.id}
+                        className={`border-b border-[var(--line)]/60 hover:bg-white/[0.03] transition-colors ${
+                          rIdx % 2 === 0 ? 'bg-transparent' : 'bg-[var(--surf2)]/25'
+                        }`}
                       >
-                        🗑
-                      </button>
-                    </div>
-                  </div>
+                        {/* Habit Title Column (Sticky) */}
+                        <td className="sticky left-0 z-10 bg-[var(--surf)] p-2.5 border-r border-[var(--line)] font-medium text-[var(--ink)]">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-base flex-shrink-0">{habit.icon || '💧'}</span>
+                              <span className="truncate text-xs sm:text-[13px] font-semibold">{habit.name}</span>
+                            </div>
+                            <div className="flex items-center gap-1 opacity-70 hover:opacity-100 flex-shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => openEditForm(habit)}
+                                className="p-1 rounded text-xs text-[var(--mut)] hover:text-[var(--ink)] cursor-pointer"
+                                title="Edit"
+                              >
+                                ✎
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteHabit(habit.id)}
+                                className="p-1 rounded text-xs text-rose-400 hover:text-rose-300 cursor-pointer"
+                                title="Delete"
+                              >
+                                🗑
+                              </button>
+                            </div>
+                          </div>
+                        </td>
 
-                  {/* Progress Bar */}
-                  <div className="w-full bg-[var(--line)] h-2 rounded-full overflow-hidden mb-3">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${progressPct}%`,
-                        backgroundColor: habit.color || '#10b981'
-                      }}
-                    />
-                  </div>
+                        {/* Interactive 1-31 Checkbox Cells */}
+                        {monthDays.map((d) => {
+                          const isDone = !!history[d.dateKey];
+                          const isMissed = !isDone && d.isPast;
 
-                  {/* Interactive Month Day Matrix (1..31) */}
-                  <div className="pt-1">
-                    <div className="text-[10px] text-[var(--mut)] uppercase font-semibold tracking-wider mb-1.5 flex items-center justify-between">
-                      <span>{monthName} Daily Check-in Grid (tap any day)</span>
-                      <span>
-                        {completedDaysThisMonth >= target
-                          ? 'Goal achieved! Any extra days are pure bonus.'
-                          : `${target - completedDaysThisMonth} more days needed this month`}
-                      </span>
-                    </div>
+                          return (
+                            <td
+                              key={d.dayNum}
+                              className={`p-1 text-center border-r border-[var(--line)]/40 ${
+                                d.isToday ? 'bg-teal-500/10' : ''
+                              }`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => toggleDay(habit, d.dateKey)}
+                                className={`w-6 h-6 sm:w-7 sm:h-7 mx-auto rounded-md flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
+                                  isDone
+                                    ? 'bg-emerald-500 border border-emerald-400 text-white shadow-sm'
+                                    : isMissed
+                                    ? 'border border-rose-400/50 bg-rose-500/10 text-rose-400 hover:bg-rose-500/25'
+                                    : 'border border-[var(--line)] bg-[var(--surf)] text-transparent hover:border-emerald-400/60'
+                                }`}
+                                title={`${habit.name} on ${d.dateKey}: ${isDone ? 'Completed ✓' : isMissed ? 'Missed ✕' : 'Pending'}`}
+                              >
+                                {isDone ? '✓' : isMissed ? '✕' : ''}
+                              </button>
+                            </td>
+                          );
+                        })}
 
-                    <div className="grid grid-cols-7 sm:grid-cols-16 gap-1 sm:gap-1.5">
-                      {Array.from({ length: daysInCurrentMonth }).map((_, idx) => {
-                        const dayNum = idx + 1;
-                        const dateKey = formatDateKey(viewYear, viewMonth, dayNum);
-                        const isDone = !!history[dateKey];
-                        const isToday =
-                          viewYear === now.getFullYear() &&
-                          viewMonth === now.getMonth() &&
-                          dayNum === now.getDate();
-
-                        return (
-                          <button
-                            key={dayNum}
-                            type="button"
-                            onClick={() => toggleDay(habit, dayNum)}
-                            className={`h-7 sm:h-8 rounded-lg text-xs font-semibold flex items-center justify-center transition-all cursor-pointer relative ${
-                              isDone
-                                ? 'shadow-sm text-white'
-                                : 'bg-[var(--surf)] border border-[var(--line)] text-[var(--mut)] hover:border-[var(--lamp)] hover:text-[var(--ink)]'
-                            } ${isToday ? 'ring-2 ring-[var(--lamp)] ring-offset-1 ring-offset-[var(--surf2)]' : ''}`}
-                            style={
-                              isDone
-                                ? {
-                                    backgroundColor: habit.color,
-                                    borderColor: habit.color
-                                  }
-                                : {}
-                            }
-                            title={`${dateKey}: ${isDone ? 'Completed' : 'Not completed'}`}
-                          >
-                            <span>{dayNum}</span>
-                            {isDone && (
-                              <span className="absolute -top-1 -right-1 text-[9px] w-3 h-3 bg-black/60 rounded-full flex items-center justify-center text-white">
-                                ✓
+                        {/* Monthly Goal Target Column */}
+                        <td className="p-2 text-center bg-[var(--surf2)]/40 border-l border-[var(--line)]">
+                          <div className="flex flex-col items-center">
+                            <span
+                              className="font-bold text-xs"
+                              style={{ color: isGoalAchieved ? '#10b981' : habit.color || '#f0b25a' }}
+                            >
+                              {completedDays} / {target}
+                            </span>
+                            <span className="text-[10px] text-[var(--mut)]">
+                              {progressPct}%
+                            </span>
+                            {isGoalAchieved && (
+                              <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-tighter">
+                                🌟 Met!
                               </span>
                             )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  {/* Summary Footer Row */}
+                  <tr className="bg-[var(--surf2)]/70 text-[var(--ink)] font-semibold border-t border-[var(--line)]">
+                    <td className="sticky left-0 z-10 bg-[var(--surf2)] p-2.5 text-left border-r border-[var(--line)] text-xs text-[var(--mut)]">
+                      Total Tasks Done
+                    </td>
+                    {monthDays.map((d) => {
+                      const completedCountOnDay = habits.filter(
+                        (h) => h.history && h.history[d.dateKey]
+                      ).length;
+
+                      return (
+                        <td
+                          key={d.dayNum}
+                          className={`p-1.5 text-center text-xs font-bold border-r border-[var(--line)]/40 ${
+                            d.isToday ? 'bg-teal-500/20 text-teal-300' : ''
+                          }`}
+                        >
+                          <span
+                            className={
+                              completedCountOnDay > 0
+                                ? 'text-emerald-400 font-extrabold'
+                                : 'text-[var(--mut)] opacity-40 font-normal'
+                            }
+                          >
+                            {completedCountOnDay > 0 ? completedCountOnDay : '-'}
+                          </span>
+                        </td>
+                      );
+                    })}
+                    <td className="p-2 text-center bg-[var(--surf2)] text-xs font-bold text-emerald-400">
+                      {monthStats.goalsMet} Goals
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-[var(--line)] bg-[var(--surf)] flex items-center justify-between text-xs text-[var(--mut)]">
-          <span>Click any day in the grid to log past or current progress.</span>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-[var(--surf2)] hover:bg-[var(--line)] text-xs font-medium text-[var(--ink)] transition-all cursor-pointer"
-          >
-            Close
-          </button>
+        {/* Modal Footer */}
+        <div className="p-3 sm:p-4 border-t border-[var(--line)] bg-[var(--surf)] flex items-center justify-between text-xs text-[var(--mut)] flex-wrap gap-2">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded bg-emerald-500 inline-flex items-center justify-center text-white text-[9px] font-bold">✓</span>
+              <span>Completed</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded border border-rose-400/50 bg-rose-500/10 inline-flex items-center justify-center text-rose-400 text-[9px] font-bold">✕</span>
+              <span>Missed (Past)</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded border border-[var(--line)] bg-[var(--surf)] inline-block"></span>
+              <span>Pending / Future</span>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-5 py-2 rounded-xl bg-[var(--surf2)] hover:bg-[var(--line)] text-xs font-semibold text-[var(--ink)] transition-all cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Add / Edit Habit Modal Dialog */}
       {isFormOpen && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
           <div className="bg-[var(--surf)] border border-[var(--line)] text-[var(--ink)] rounded-[24px] p-6 w-full max-w-md shadow-2xl">
             <h3 className="serif text-xl font-normal mb-1">
               {editingHabitId ? 'Edit Habit' : 'Create New Habit'}
             </h3>
             <p className="text-xs text-[var(--mut)] mb-4">
-              Set a monthly goal to keep yourself accountable without daily burnout.
+              Add a habit to your spreadsheet matrix and set a monthly target goal.
             </p>
 
             <form onSubmit={handleSaveForm} className="space-y-4">
@@ -525,7 +621,7 @@ export default function HabitTrackerModal({
                 <label className="block text-xs text-[var(--mut)] mb-1">Habit Title</label>
                 <input
                   type="text"
-                  placeholder="e.g. Morning 5km Run, Drink 2L Water, Read 20 mins..."
+                  placeholder="e.g. Wake up at 7 AM, Read 20 mins, Drink 2L Water..."
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   maxLength={40}
@@ -554,7 +650,7 @@ export default function HabitTrackerModal({
                   ))}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-[var(--mut)]">Or type custom emoji:</span>
+                  <span className="text-xs text-[var(--mut)]">Custom emoji:</span>
                   <input
                     type="text"
                     value={formIcon}
@@ -579,13 +675,6 @@ export default function HabitTrackerModal({
                       style={{ backgroundColor: color }}
                     />
                   ))}
-                  <input
-                    type="color"
-                    value={formColor}
-                    onChange={(e) => setFormColor(e.target.value)}
-                    className="w-6 h-6 rounded-full border-0 p-0 cursor-pointer overflow-hidden bg-transparent"
-                    title="Custom color"
-                  />
                 </div>
               </div>
 
@@ -628,7 +717,7 @@ export default function HabitTrackerModal({
                   ))}
                 </div>
                 <p className="text-[11px] text-[var(--mut)] mt-1.5">
-                  Aim to complete this habit on <strong>{formMonthlyTarget}</strong> out of {daysInCurrentMonth} days in {monthName}.
+                  Aiming to complete this habit on <strong>{formMonthlyTarget}</strong> of {daysInCurrentMonth} days in {monthName}.
                 </p>
               </div>
 
