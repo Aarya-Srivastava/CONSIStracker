@@ -52,6 +52,20 @@ const UserSchema = new mongoose.Schema(
 
 const UserModel = mongoose.models.User || mongoose.model('User', UserSchema);
 
+const FeedbackSchema = new mongoose.Schema(
+  {
+    id: { type: String, required: true, unique: true },
+    username: { type: String, required: true, trim: true },
+    rating: { type: String, default: 'loved' },
+    category: { type: String, default: 'General' },
+    message: { type: String, required: true },
+    createdAt: { type: String, default: () => new Date().toISOString() }
+  },
+  { minimize: false }
+);
+
+const FeedbackModel = mongoose.models.Feedback || mongoose.model('Feedback', FeedbackSchema);
+
 let isMongoConnected = false;
 
 async function initDb() {
@@ -106,21 +120,49 @@ function ensureLocalDb() {
         passwordHash: bcrypt.hashSync('focus', salt),
         createdAt: new Date().toISOString(),
         state: createDefaultState()
+      },
+      admin: {
+        id: 'u_admin',
+        username: 'admin',
+        passwordHash: bcrypt.hashSync('admin123', salt),
+        createdAt: new Date().toISOString(),
+        state: createDefaultState()
       }
     };
 
-    fs.writeFileSync(DB_FILE, JSON.stringify({ users: initialUsers }, null, 2), 'utf-8');
+    fs.writeFileSync(DB_FILE, JSON.stringify({ users: initialUsers, feedbacks: [] }, null, 2), 'utf-8');
     return;
   }
+
+  // Ensure admin user exists in existing local DB
+  try {
+    const raw = fs.readFileSync(DB_FILE, 'utf-8');
+    const parsed = JSON.parse(raw);
+    if (parsed.users && !parsed.users.admin) {
+      const salt = bcrypt.genSaltSync(10);
+      parsed.users.admin = {
+        id: 'u_admin',
+        username: 'admin',
+        passwordHash: bcrypt.hashSync('admin123', salt),
+        createdAt: new Date().toISOString(),
+        state: createDefaultState()
+      };
+      if (!parsed.feedbacks) parsed.feedbacks = [];
+      fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2), 'utf-8');
+    }
+  } catch (e) {}
 }
 
 function readLocalDb() {
   ensureLocalDb();
   try {
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!parsed.feedbacks) parsed.feedbacks = [];
+    if (!parsed.users) parsed.users = {};
+    return parsed;
   } catch (err) {
-    return { users: {} };
+    return { users: {}, feedbacks: [] };
   }
 }
 
@@ -230,6 +272,48 @@ async function updateUserState(userId, newState) {
   return user.state;
 }
 
+// ---------------- TRIAL RUN FEEDBACK METHODS ----------------
+async function createFeedback({ username, rating, category, message }) {
+  const item = {
+    id: 'fb_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+    username: (username || 'anonymous').trim(),
+    rating: rating || 'loved',
+    category: category || 'General',
+    message: (message || '').trim(),
+    createdAt: new Date().toISOString()
+  };
+
+  if (isMongoConnected) {
+    const doc = await FeedbackModel.create(item);
+    return doc.toObject();
+  }
+
+  const db = readLocalDb();
+  db.feedbacks = db.feedbacks || [];
+  db.feedbacks.unshift(item);
+  writeLocalDb(db);
+  return item;
+}
+
+async function getAllFeedbacks() {
+  if (isMongoConnected) {
+    return await FeedbackModel.find({}).sort({ createdAt: -1 }).lean();
+  }
+  const db = readLocalDb();
+  return (db.feedbacks || []).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+async function deleteFeedback(id) {
+  if (isMongoConnected) {
+    await FeedbackModel.deleteOne({ id });
+    return true;
+  }
+  const db = readLocalDb();
+  db.feedbacks = (db.feedbacks || []).filter((f) => f.id !== id);
+  writeLocalDb(db);
+  return true;
+}
+
 module.exports = {
   initDb,
   findUserByUsername,
@@ -237,5 +321,8 @@ module.exports = {
   createUser,
   updateUserPassword,
   updateUserState,
+  createFeedback,
+  getAllFeedbacks,
+  deleteFeedback,
   DEFAULT_TAGS
 };

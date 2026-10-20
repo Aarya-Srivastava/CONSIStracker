@@ -11,6 +11,9 @@ const {
   createUser,
   updateUserPassword,
   updateUserState,
+  createFeedback,
+  getAllFeedbacks,
+  deleteFeedback,
   DEFAULT_TAGS
 } = require('./db');
 
@@ -105,7 +108,7 @@ app.post('/api/auth/register', async (req, res) => {
   const cleanUsername = username.trim().toLowerCase();
   const existing = await findUserByUsername(cleanUsername);
   if (existing) {
-    return res.status(409).json({ success: false, message: `Username "${cleanUsername}" is already taken` });
+    return res.status(409).json({ success: false, message: 'Username already exists' });
   }
 
   try {
@@ -120,6 +123,16 @@ app.post('/api/auth/register', async (req, res) => {
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message || 'Registration failed' });
   }
+});
+
+// Check if username already exists
+app.get('/api/auth/check-username', async (req, res) => {
+  const username = (req.query.username || '').trim().toLowerCase();
+  if (!username) {
+    return res.json({ exists: false });
+  }
+  const user = await findUserByUsername(username);
+  return res.json({ exists: !!user });
 });
 
 // Current User Profile
@@ -150,9 +163,9 @@ app.post('/api/auth/change-password', authenticateToken, async (req, res) => {
   return res.json({ success: true, message: 'Password updated successfully' });
 });
 
-// Reset Password to default 'focus'
+// Reset Password (sets custom new password without referencing or defaulting to 'focus')
 app.post('/api/auth/reset', async (req, res) => {
-  const { username } = req.body;
+  const { username, newPassword } = req.body;
   const targetUsername = (username || 'default').trim().toLowerCase();
   const user = await findUserByUsername(targetUsername);
 
@@ -160,8 +173,54 @@ app.post('/api/auth/reset', async (req, res) => {
     return res.status(404).json({ success: false, message: `User "${targetUsername}" not found` });
   }
 
-  await updateUserPassword(user.id, 'focus');
-  return res.json({ success: true, message: `Password for ${targetUsername} reset to "focus"` });
+  if (!newPassword || newPassword.trim().length < 3) {
+    return res.status(400).json({ success: false, message: 'New password must be at least 3 characters' });
+  }
+
+  await updateUserPassword(user.id, newPassword);
+  return res.json({ success: true, message: `Password for "${targetUsername}" updated successfully` });
+});
+
+// ---------------- TRIAL RUN FEEDBACK ROUTES ----------------
+
+// Submit cute feedback
+app.post('/api/feedback', async (req, res) => {
+  const { username, rating, category, message } = req.body;
+  if (!message || !message.trim()) {
+    return res.status(400).json({ success: false, message: 'Feedback message is required' });
+  }
+
+  try {
+    const feedback = await createFeedback({
+      username: (username || 'anonymous').trim(),
+      rating,
+      category,
+      message
+    });
+    return res.status(201).json({ success: true, feedback, message: 'Thank you for your feedback!' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Could not save feedback' });
+  }
+});
+
+// Get all feedbacks (viewable by admin)
+app.get('/api/feedback', async (req, res) => {
+  try {
+    const list = await getAllFeedbacks();
+    return res.json({ success: true, feedbacks: list });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Could not fetch feedbacks' });
+  }
+});
+
+// Delete feedback (admin moderation)
+app.delete('/api/feedback/:id', async (req, res) => {
+  try {
+    await deleteFeedback(req.params.id);
+    return res.json({ success: true, message: 'Feedback deleted' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Could not delete feedback' });
+  }
 });
 
 // ---------------- DATA ROUTES (PER-USER) ----------------

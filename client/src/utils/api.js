@@ -218,5 +218,65 @@ export const api = {
     };
     await this.saveState(updated);
     return updated;
+  },
+
+  // Check username availability
+  async checkUsername(username) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/check-username?username=${encodeURIComponent(username)}`);
+      return await res.json();
+    } catch (err) {
+      return { exists: false };
+    }
+  },
+
+  // Reset password (custom new password)
+  async resetPassword(username, newPassword) {
+    try {
+      const res = await fetch(`${API_BASE}/auth/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, newPassword })
+      });
+      return await res.json();
+    } catch (err) {
+      return { success: false, message: 'Could not connect to server' };
+    }
+  },
+
+  // Submit trial feedback
+  async sendFeedback(feedbackData) {
+    try {
+      const res = await fetch(`${API_BASE}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(feedbackData)
+      });
+      return await res.json();
+    } catch (err) {
+      return { success: false, message: 'Could not connect to server' };
+    }
+  },
+
+  // Get all feedbacks (admin view)
+  async getFeedbacks() {
+    try {
+      const res = await fetch(`${API_BASE}/feedback`);
+      return await res.json();
+    } catch (err) {
+      return { success: false, feedbacks: [] };
+    }
+  },
+
+  // Delete feedback (admin)
+  async deleteFeedback(id) {
+    try {
+      const res = await fetch(`${API_BASE}/feedback/${id}`, {
+        method: 'DELETE'
+      });
+      return await res.json();
+    } catch (err) {
+      return { success: false };
+    }
   }
 };

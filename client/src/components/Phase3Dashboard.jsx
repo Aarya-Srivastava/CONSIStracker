@@ -7,6 +7,7 @@ import ScrapbookModal from './ScrapbookModal';
 import DayGoalModal from './DayGoalModal';
 import HabitTrackerModal from './HabitTrackerModal';
 import CustomSubjectModal from './CustomSubjectModal';
+import FeedbackModal from './FeedbackModal';
 import { DOMAINS } from './WelcomeModal';
 import { playSfx, setVolumeLevel } from '../utils/audio';
 import { triggerConfetti } from '../utils/confetti';
@@ -322,6 +323,7 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
   const [weekOffset, setWeekOffset] = useState(0);
   const [chartView, setChartView] = useState('total'); // 'total' | 'subjects'
   const [bouncingHabitId, setBouncingHabitId] = useState(null);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 
   // Habit Monthly Statistics
   const monthStats = useMemo(() => {
@@ -954,6 +956,31 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
             >
               📖
             </button>
+
+            {/* Cute Trial Feedback Pill */}
+            <button
+              type="button"
+              onClick={() => setShowFeedbackModal(true)}
+              title="Trial Run Feedback - Tell us what you think!"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500/15 via-rose-500/15 to-amber-500/15 hover:border-rose-400 text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all border border-rose-500/30 hover:scale-105 active:scale-95 shadow-xs"
+            >
+              <span>💬</span>
+              <span className="hidden sm:inline">Feedback</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+            </button>
+
+            {/* Admin Feedback Vault Pill (Visible to admin) */}
+            {currentUser?.username?.toLowerCase() === 'admin' && (
+              <button
+                type="button"
+                onClick={() => setShowFeedbackModal(true)}
+                title="Admin Feedback Vault (View all user submissions)"
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 hover:border-purple-400 text-xs font-bold text-purple-300 cursor-pointer transition-all border border-purple-500/40 hover:scale-105 active:scale-95 shadow-xs"
+              >
+                <span>🛡️</span>
+                <span>Admin</span>
+              </button>
+            )}
 
             {/* Sound & Volume Control */}
             <div className="relative flex items-center">
@@ -2133,6 +2160,14 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
           </div>
         </div>
       )}
+
+      {/* Trial Run Cute Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        showToast={showToast}
+        isMuted={state.mute}
+      />
     </div>
   );
 }
