@@ -10,6 +10,7 @@ export const DOMAINS = [
     icon: '💻',
     color: '#06b6d4',
     badge: 'Popular',
+    tagline: 'LeetCode & Algos',
     desc: 'LeetCode mediums, core algorithms, system design & internship feature PRs.'
   },
   {
@@ -19,6 +20,7 @@ export const DOMAINS = [
     icon: '🤖',
     color: '#a855f7',
     badge: 'High Impact',
+    tagline: 'Models & Data Science',
     desc: 'PyTorch models, research paper breakdowns, Kaggle datasets & mathematics.'
   },
   {
@@ -28,6 +30,7 @@ export const DOMAINS = [
     icon: '🌐',
     color: '#3b82f6',
     badge: 'Builder',
+    tagline: 'Web Apps & Cloud',
     desc: 'React, Node, cloud architecture, REST/GraphQL APIs & shipping products.'
   },
   {
@@ -36,7 +39,8 @@ export const DOMAINS = [
     shortName: 'Academics',
     icon: '📚',
     color: '#f59e0b',
-    badge: 'Hard Work',
+    badge: 'Core Focus',
+    tagline: 'Exams & Deep Study',
     desc: 'GATE, college semesters, active recall, formula derivations & deep reading.'
   },
   {
@@ -46,6 +50,7 @@ export const DOMAINS = [
     icon: '🎨',
     color: '#f43f5e',
     badge: 'Creative',
+    tagline: 'Figma & Design Systems',
     desc: 'Figma design systems, micro-interactions, wireframing & portfolio case studies.'
   },
   {
@@ -54,7 +59,8 @@ export const DOMAINS = [
     shortName: 'Career',
     icon: '💼',
     color: '#10b981',
-    badge: 'Opportunity',
+    badge: 'Placements',
+    tagline: 'Interviews & Resume',
     desc: 'XYZ resume bullets, cold outreach to managers, STAR behavioral interviews.'
   }
 ];
