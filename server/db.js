@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 
 const DATA_DIR = path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
@@ -20,7 +21,7 @@ function createDefaultState() {
     dayGoals: {},
     dayNotes: {},
     sessions: [],
-    tags: [],
+    tags: DEFAULT_TAGS,
     habits: [],
     scrap: [],
     closed: [],
@@ -28,6 +29,8 @@ function createDefaultState() {
     photo: {},
     mute: false,
     welcomed: false,
+    dopamineXp: 0,
+    dailyChallenge: null,
     rem: { on: false, t: '21:30' },
     remDay: '',
     snooze: 0,
@@ -35,7 +38,61 @@ function createDefaultState() {
   };
 }
 
-function ensureDb() {
+// ---------------- MONGODB ATLAS CLOUD SCHEMA ----------------
+const UserSchema = new mongoose.Schema(
+  {
+    id: { type: String, required: true, unique: true },
+    username: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    passwordHash: { type: String, required: true },
+    createdAt: { type: String, default: () => new Date().toISOString() },
+    state: { type: mongoose.Schema.Types.Mixed, default: createDefaultState }
+  },
+  { minimize: false }
+);
+
+const UserModel = mongoose.models.User || mongoose.model('User', UserSchema);
+
+let isMongoConnected = false;
+
+async function initDb() {
+  const mongoUri = process.env.MONGODB_URI;
+  if (mongoUri) {
+    try {
+      await mongoose.connect(mongoUri);
+      isMongoConnected = true;
+      console.log('🍃 Connected to MongoDB Atlas Cloud Database!');
+
+      // Check if cloud DB needs initial migration from db.json
+      const count = await UserModel.countDocuments();
+      if (count === 0 && fs.existsSync(DB_FILE)) {
+        console.log('📦 Seeding cloud database with initial local users...');
+        try {
+          const raw = fs.readFileSync(DB_FILE, 'utf-8');
+          const parsed = JSON.parse(raw);
+          if (parsed.users) {
+            for (const u of Object.values(parsed.users)) {
+              await UserModel.create(u);
+            }
+            console.log(`✅ Seeded ${Object.keys(parsed.users).length} users into MongoDB Atlas!`);
+          }
+        } catch (e) {
+          console.error('Initial cloud seed error:', e);
+        }
+      }
+      return;
+    } catch (err) {
+      console.error('⚠️ MongoDB connection error, falling back to local file storage:', err.message);
+      isMongoConnected = false;
+    }
+  } else {
+    console.log('📁 MONGODB_URI not set. Using local file storage (server/data/db.json)');
+  }
+
+  ensureLocalDb();
+}
+
+// Local File DB fallback
+function ensureLocalDb() {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
@@ -55,68 +112,61 @@ function ensureDb() {
     fs.writeFileSync(DB_FILE, JSON.stringify({ users: initialUsers }, null, 2), 'utf-8');
     return;
   }
-
-  // Migrate legacy single-user structure if present
-  try {
-    const raw = fs.readFileSync(DB_FILE, 'utf-8');
-    const parsed = JSON.parse(raw);
-    if (!parsed.users) {
-      console.log('Migrating single-user db.json to multi-user format...');
-      const salt = bcrypt.genSaltSync(10);
-      const oldPassword = (parsed.auth && parsed.auth.password) || 'focus';
-      const oldState = parsed.state || createDefaultState();
-      if (!oldState.tags) oldState.tags = DEFAULT_TAGS;
-
-      const migrated = {
-        users: {
-          default: {
-            id: 'u_default',
-            username: 'default',
-            passwordHash: bcrypt.hashSync(oldPassword, salt),
-            createdAt: new Date().toISOString(),
-            state: oldState
-          }
-        }
-      };
-      fs.writeFileSync(DB_FILE, JSON.stringify(migrated, null, 2), 'utf-8');
-    }
-  } catch (err) {
-    console.error('Error during db format validation:', err);
-  }
 }
 
-function readDb() {
-  ensureDb();
+function readLocalDb() {
+  ensureLocalDb();
   try {
     const raw = fs.readFileSync(DB_FILE, 'utf-8');
     return JSON.parse(raw);
   } catch (err) {
-    console.error('Error reading db.json, returning empty structure:', err);
     return { users: {} };
   }
 }
 
-function writeDb(data) {
-  ensureDb();
+function writeLocalDb(data) {
+  ensureLocalDb();
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-// User Helpers
-function findUserByUsername(username) {
-  const db = readDb();
+// Unified CRUD methods
+async function findUserByUsername(username) {
   const uname = (username || 'default').trim().toLowerCase();
+  if (isMongoConnected) {
+    return await UserModel.findOne({ username: uname }).lean();
+  }
+  const db = readLocalDb();
   return db.users ? db.users[uname] : null;
 }
 
-function findUserById(id) {
-  const db = readDb();
+async function findUserById(id) {
+  if (isMongoConnected) {
+    return await UserModel.findOne({ id }).lean();
+  }
+  const db = readLocalDb();
   if (!db.users) return null;
-  return Object.values(db.users).find(u => u.id === id) || null;
+  return Object.values(db.users).find((u) => u.id === id) || null;
 }
 
-function createUser(username, rawPassword) {
-  const db = readDb();
+async function createUser(username, rawPassword) {
   const uname = username.trim().toLowerCase();
+
+  if (isMongoConnected) {
+    const existing = await UserModel.findOne({ username: uname });
+    if (existing) throw new Error('Username already exists');
+
+    const salt = bcrypt.genSaltSync(10);
+    const newUser = await UserModel.create({
+      id: 'u_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+      username: uname,
+      passwordHash: bcrypt.hashSync(rawPassword.trim().toLowerCase(), salt),
+      createdAt: new Date().toISOString(),
+      state: createDefaultState()
+    });
+    return newUser.toObject();
+  }
+
+  const db = readLocalDb();
   if (db.users && db.users[uname]) {
     throw new Error('Username already exists');
   }
@@ -132,37 +182,56 @@ function createUser(username, rawPassword) {
 
   db.users = db.users || {};
   db.users[uname] = newUser;
-  writeDb(db);
+  writeLocalDb(db);
   return newUser;
 }
 
-function updateUserPassword(userId, newPassword) {
-  const db = readDb();
-  const user = Object.values(db.users || {}).find(u => u.id === userId);
+async function updateUserPassword(userId, newPassword) {
+  const salt = bcrypt.genSaltSync(10);
+  const passwordHash = bcrypt.hashSync(newPassword.trim().toLowerCase(), salt);
+
+  if (isMongoConnected) {
+    await UserModel.updateOne({ id: userId }, { $set: { passwordHash } });
+    return true;
+  }
+
+  const db = readLocalDb();
+  const user = Object.values(db.users || {}).find((u) => u.id === userId);
   if (!user) throw new Error('User not found');
 
-  const salt = bcrypt.genSaltSync(10);
-  user.passwordHash = bcrypt.hashSync(newPassword.trim().toLowerCase(), salt);
-  writeDb(db);
+  user.passwordHash = passwordHash;
+  writeLocalDb(db);
   return true;
 }
 
-function updateUserState(userId, newState) {
-  const db = readDb();
-  const user = Object.values(db.users || {}).find(u => u.id === userId);
+async function updateUserState(userId, newState) {
+  if (isMongoConnected) {
+    const user = await UserModel.findOne({ id: userId });
+    if (!user) throw new Error('User not found');
+
+    user.state = {
+      ...(user.state || {}),
+      ...newState
+    };
+    user.markModified('state');
+    await user.save();
+    return user.state;
+  }
+
+  const db = readLocalDb();
+  const user = Object.values(db.users || {}).find((u) => u.id === userId);
   if (!user) throw new Error('User not found');
 
   user.state = {
     ...user.state,
     ...newState
   };
-  writeDb(db);
+  writeLocalDb(db);
   return user.state;
 }
 
 module.exports = {
-  readDb,
-  writeDb,
+  initDb,
   findUserByUsername,
   findUserById,
   createUser,
