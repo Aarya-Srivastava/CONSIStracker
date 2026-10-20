@@ -108,6 +108,7 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
   const [selectedGoalDate, setSelectedGoalDate] = useState('');
   const [weekOffset, setWeekOffset] = useState(0);
   const [chartView, setChartView] = useState('total'); // 'total' | 'subjects'
+  const [bouncingHabitId, setBouncingHabitId] = useState(null);
 
   // Habit Monthly Statistics
   const monthStats = useMemo(() => {
@@ -128,6 +129,20 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
     const completionRate = totalTarget > 0 ? Math.round((totalCompleted / totalTarget) * 100) : 0;
     return { goalsMet, totalTarget, totalCompleted, completionRate };
   }, [habits, todayIso]);
+
+  const gaugeColor = useMemo(() => {
+    if (monthStats.completionRate >= 80) return '#10b981'; // vibrant emerald
+    if (monthStats.completionRate >= 50) return 'var(--lamp)'; // golden lamp theme
+    if (monthStats.completionRate >= 25) return '#f59e0b'; // amber
+    return '#f43f5e'; // rose/coral
+  }, [monthStats.completionRate]);
+
+  const adherenceLabel = useMemo(() => {
+    if (monthStats.completionRate >= 80) return { text: '🔥 High Consistency', color: 'text-emerald-500' };
+    if (monthStats.completionRate >= 50) return { text: '⚡ Steady Momentum', color: 'text-[var(--lamp)]' };
+    if (monthStats.completionRate >= 25) return { text: '🌱 Building Habit', color: 'text-amber-500' };
+    return { text: '🎯 Getting Started', color: 'text-[var(--mut)]' };
+  }, [monthStats.completionRate]);
 
   // Goal calculations
   const defaultGoal = state.goal || 2;
@@ -253,8 +268,11 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
     setShowStairsModal(true);
   };
 
-  // Quick Habit Check-in for Today
+  // Quick Habit Check-in for Today with Micro-Interaction
   const handleToggleTodayHabit = (habit) => {
+    setBouncingHabitId(habit.id);
+    setTimeout(() => setBouncingHabitId((cur) => (cur === habit.id ? null : cur)), 400);
+
     const history = { ...(habit.history || {}) };
     const wasDone = !!history[todayIso];
     const isNowDone = !wasDone;
@@ -270,10 +288,19 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
     const monthlyCount = Object.keys(history).filter((k) => k.startsWith(prefix) && history[k]).length;
     const target = habit.monthlyTarget || 20;
 
+    const allDone = habits.every((h) => {
+      if (h.id === habit.id) return isNowDone;
+      return !!(h.history && h.history[todayIso]);
+    });
+
     if (isNowDone && monthlyCount === target) {
       triggerConfetti();
       playSfx('celebrate', state.mute);
       showToast(`🎉 Monthly Goal Achieved for ${habit.name}! (${monthlyCount}/${target} days)`);
+    } else if (isNowDone && allDone && habits.length > 1) {
+      triggerConfetti();
+      playSfx('celebrate', state.mute);
+      showToast(`🌟 All ${habits.length} habits completed today! Fantastic work!`);
     } else if (isNowDone) {
       showToast(`Marked ${habit.name} done today`);
     }
@@ -1099,6 +1126,11 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
               <div className="md:col-span-4 flex flex-col items-center justify-center p-5 rounded-2xl bg-[var(--surf2)]/70 border border-[var(--line)]">
                 <div className="relative w-32 h-32 flex items-center justify-center">
                   <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    <defs>
+                      <filter id="gaugeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor={gaugeColor} floodOpacity="0.4" />
+                      </filter>
+                    </defs>
                     <circle
                       cx="50"
                       cy="50"
@@ -1112,16 +1144,20 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
                       cy="50"
                       r="40"
                       fill="none"
-                      stroke="var(--lamp)"
+                      stroke={gaugeColor}
                       strokeWidth="8"
                       strokeDasharray={2 * Math.PI * 40}
                       strokeDashoffset={2 * Math.PI * 40 * (1 - Math.min(100, monthStats.completionRate) / 100)}
                       strokeLinecap="round"
+                      filter="url(#gaugeGlow)"
                       className="transition-all duration-700 ease-out"
                     />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                    <span className="text-2xl font-bold tracking-tight text-[var(--ink)]">
+                    <span
+                      className="text-2xl font-bold tracking-tight transition-colors duration-500"
+                      style={{ color: monthStats.completionRate > 0 ? gaugeColor : 'var(--ink)' }}
+                    >
                       {monthStats.completionRate}%
                     </span>
                     <span className="text-[10px] tracking-widest uppercase font-semibold text-[var(--mut)]">
@@ -1129,9 +1165,11 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
                     </span>
                   </div>
                 </div>
-                <p className="text-[11px] text-[var(--mut)] text-center mt-3">
-                  Overall monthly progress across all active targets
-                </p>
+                <div className="mt-3 flex items-center gap-1.5 text-center">
+                  <span className={`text-[11px] font-semibold transition-colors duration-300 ${adherenceLabel.color}`}>
+                    {adherenceLabel.text}
+                  </span>
+                </div>
               </div>
 
               {/* Stats & Quick Habit Overview */}
@@ -1191,6 +1229,7 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
                   <span className="text-xs text-[var(--mut)] font-medium mr-1">Habits today:</span>
                   {habits.slice(0, 6).map((habit) => {
                     const isTodayDone = !!(habit.history && habit.history[todayIso]);
+                    const isBouncing = bouncingHabitId === habit.id;
                     return (
                       <button
                         key={habit.id}
@@ -1199,18 +1238,24 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
                           e.stopPropagation();
                           handleToggleTodayHabit(habit);
                         }}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border transition-all cursor-pointer ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium border transition-all duration-200 cursor-pointer select-none active:scale-90 hover:scale-[1.02] ${
+                          isBouncing ? 'scale-105 ring-2 ring-emerald-400' : ''
+                        } ${
                           isTodayDone
                             ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400'
                             : 'bg-[var(--surf)] border-[var(--line)] text-[var(--ink)] hover:border-[var(--lamp)]'
                         }`}
                         title={isTodayDone ? `${habit.name}: Completed today! Click to uncheck` : `${habit.name}: Click to check off today`}
                       >
-                        <span>{habit.icon || '💧'}</span>
+                        <span className="text-sm">{habit.icon || '💧'}</span>
                         <span className="max-w-[100px] truncate">{habit.name}</span>
-                        <span className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                          isTodayDone ? 'bg-emerald-500 text-white' : 'border border-[var(--line)] text-transparent'
-                        }`}>
+                        <span
+                          className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold transition-all duration-300 ${
+                            isTodayDone
+                              ? 'bg-emerald-500 text-white scale-100'
+                              : 'border border-[var(--line)] text-transparent scale-90'
+                          }`}
+                        >
                           ✓
                         </span>
                       </button>
