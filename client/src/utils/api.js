@@ -44,6 +44,16 @@ export function setCurrentUser(user) {
   } catch (e) {}
 }
 
+export function isLoggedIn() {
+  try {
+    const token = localStorage.getItem(TOKEN_KEY);
+    const user = localStorage.getItem(USER_KEY);
+    return Boolean(token && user);
+  } catch (e) {
+    return false;
+  }
+}
+
 function getLocalState() {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -86,6 +96,32 @@ function authHeaders() {
 export const api = {
   getToken,
   setToken,
+  isLoggedIn,
+
+  // Verify current session with server
+  async getMe() {
+    const token = getToken();
+    if (!token) return { success: false, status: 401, message: 'No token' };
+    try {
+      const res = await fetch(`${API_BASE}/auth/me`, {
+        headers: authHeaders()
+      });
+      if (res.ok) {
+        const user = await res.json();
+        if (user && user.username) {
+          setCurrentUser({ id: user.id, username: user.username });
+        }
+        return { success: true, user, status: 200 };
+      }
+      if (res.status === 401 || res.status === 403) {
+        return { success: false, status: res.status, message: 'Session expired' };
+      }
+      return { success: true, offline: true, status: res.status };
+    } catch (err) {
+      // Server asleep or offline - do not log out
+      return { success: true, offline: true, user: getCurrentUser() };
+    }
+  },
 
   // Login (supports optional username, defaults to 'default')
   async login(password, username = 'default') {
@@ -106,6 +142,7 @@ export const api = {
       // Offline fallback: if password is focus, allow default login
       const isOk = password.trim().toLowerCase() === 'focus';
       if (isOk) {
+        setToken('offline_token_default');
         setCurrentUser({ username: username || 'default', id: 'u_default' });
       }
       return {

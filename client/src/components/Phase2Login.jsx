@@ -4,7 +4,13 @@ import { DOMAINS } from './WelcomeModal';
 
 export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
   const [selectedDomain, setSelectedDomain] = useState('swe_dsa');
-  const [username, setUsername] = useState('default');
+  const [username, setUsername] = useState(() => {
+    try {
+      return localStorage.getItem('consis_last_username') || 'default';
+    } catch (e) {
+      return 'default';
+    }
+  });
   const [password, setPassword] = useState('');
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [usernameCheck, setUsernameCheck] = useState(null); // null | 'checking' | 'exists' | 'available'
@@ -98,6 +104,9 @@ export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
       }
 
       if (res.success) {
+        try {
+          localStorage.setItem('consis_last_username', cleanUser);
+        } catch (e) {}
         setIsSuccess(true);
         setStatus({
           text: isRegisterMode

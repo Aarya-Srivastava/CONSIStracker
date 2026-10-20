@@ -4,10 +4,18 @@ import Phase2Login from './components/Phase2Login';
 import Phase3Dashboard from './components/Phase3Dashboard';
 import DianoSvg from './components/DianoSvg';
 import WelcomeModal from './components/WelcomeModal';
-import { api, DEFAULT_TAGS } from './utils/api';
+import { api, isLoggedIn, DEFAULT_TAGS } from './utils/api';
 
 export default function App() {
-  const [phase, setPhase] = useState(1); // 1 = Sarcastic Intro, 2 = Password Gate, 3 = Dashboard
+  const [phase, setPhase] = useState(() => {
+    if (isLoggedIn()) return 3;
+    try {
+      const introDone = localStorage.getItem('consis_intro_done');
+      return introDone ? 2 : 1;
+    } catch (e) {
+      return 1;
+    }
+  });
   const [appData, setAppData] = useState({
     goal: 2,
     dayGoals: {},
@@ -35,8 +43,25 @@ export default function App() {
   };
 
   useEffect(() => {
-    loadUserData();
-    api.recordVisit();
+    const initApp = async () => {
+      if (isLoggedIn()) {
+        try {
+          const check = await api.getMe();
+          // Only log out if backend explicitly rejected token (401/403)
+          if (check && check.success === false && (check.status === 401 || check.status === 403)) {
+            api.logout();
+            setPhase(2);
+            return;
+          }
+        } catch (e) {
+          // If offline or network glitch, retain local session
+        }
+      }
+      await loadUserData();
+      api.recordVisit();
+    };
+
+    initApp();
   }, []);
 
   // Sync state changes with backend & local storage
@@ -79,11 +104,17 @@ export default function App() {
 
   // Transition from Phase 1 to Phase 2
   const handleProceedToPhase2 = () => {
+    try {
+      localStorage.setItem('consis_intro_done', 'true');
+    } catch (e) {}
     setPhase(2);
   };
 
   // Transition from Phase 2 to Phase 3 (when password verified)
   const handleUnlockSuccess = async (chosenDomain) => {
+    try {
+      localStorage.setItem('consis_intro_done', 'true');
+    } catch (e) {}
     const data = await loadUserData();
     const updated = {
       ...(data || {}),
@@ -91,8 +122,10 @@ export default function App() {
     };
     handleUpdateState(updated);
     setPhase(3);
-    // Show welcome tour modal
-    setTimeout(() => setShowWelcome(true), 400);
+    // Show welcome tour modal only if first time or not yet welcomed
+    if (!data?.welcomed) {
+      setTimeout(() => setShowWelcome(true), 400);
+    }
   };
 
   const handleFinishWelcome = ({ selectedGoal, selectedDomain }) => {

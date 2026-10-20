@@ -4,7 +4,8 @@ client/node_modules
 server/node_modules
 
 # Production builds
-dist
+/dist
+
 
 
 # Logs & temp
