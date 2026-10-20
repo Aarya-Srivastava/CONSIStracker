@@ -7,7 +7,8 @@ import ScrapbookModal from './ScrapbookModal';
 import DayGoalModal from './DayGoalModal';
 import HabitTrackerModal from './HabitTrackerModal';
 import CustomSubjectModal from './CustomSubjectModal';
-import { playSfx } from '../utils/audio';
+import { playSfx, setVolumeLevel } from '../utils/audio';
+import { triggerConfetti } from '../utils/confetti';
 import { getCurrentUser } from '../utils/api';
 
 const SCENES = [
@@ -47,6 +48,27 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
   const habits = state.habits || [];
   const [showHabitModal, setShowHabitModal] = useState(false);
   const [showCustomSubjectModal, setShowCustomSubjectModal] = useState(false);
+
+  // Sound Volume control state
+  const [volume, setVolume] = useState(state.volume != null ? state.volume : 80);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
+
+  useEffect(() => {
+    setVolumeLevel(state.mute ? 0 : volume / 100);
+  }, [volume, state.mute]);
+
+  const handleVolumeChange = (newVal) => {
+    const val = parseInt(newVal) || 0;
+    setVolume(val);
+    setVolumeLevel(val / 100);
+    const updatedState = { ...state, volume: val };
+    if (val === 0 && !state.mute) {
+      updatedState.mute = true;
+    } else if (val > 0 && state.mute) {
+      updatedState.mute = false;
+    }
+    onUpdateState(updatedState);
+  };
 
   // Mascot interaction
   const [petHop, setPetHop] = useState(false);
@@ -229,6 +251,7 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
     const target = habit.monthlyTarget || 20;
 
     if (isNowDone && monthlyCount === target) {
+      triggerConfetti();
       playSfx('celebrate', state.mute);
       showToast(`🎉 Monthly Goal Achieved for ${habit.name}! (${monthlyCount}/${target} days)`);
     } else if (isNowDone) {
@@ -503,14 +526,41 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
           >
             📖
           </button>
-          <button
-            type="button"
-            onClick={toggleMute}
-            title={state.mute ? 'Unmute sounds' : 'Mute sounds'}
-            className="w-10 h-10 rounded-full border border-[var(--line)] bg-transparent hover:border-[var(--lamp)] flex items-center justify-center text-lg transition-colors cursor-pointer"
-          >
-            {state.mute ? '🔕' : '🔔'}
-          </button>
+          {/* Sound & Volume Control */}
+          <div className="relative flex items-center">
+            <button
+              type="button"
+              onClick={toggleMute}
+              onMouseEnter={() => setShowVolumeSlider(true)}
+              title={state.mute ? 'Unmute sounds' : `Sounds on (${volume}%) - hover to adjust`}
+              className="w-10 h-10 rounded-full border border-[var(--line)] bg-transparent hover:border-[var(--lamp)] flex items-center justify-center text-lg transition-colors cursor-pointer"
+            >
+              {state.mute || volume === 0 ? '🔕' : '🔔'}
+            </button>
+
+            {/* Subtle Volume Slider Popup / Hover Pill */}
+            {showVolumeSlider && (
+              <div
+                onMouseLeave={() => setShowVolumeSlider(false)}
+                className="absolute right-0 top-12 z-30 p-3 bg-[var(--surf2)] border border-[var(--line)] rounded-2xl shadow-xl flex items-center gap-2.5 min-w-[170px] animate-fade-in"
+              >
+                <span className="text-xs text-[var(--mut)] cursor-pointer" onClick={() => handleVolumeChange(0)}>
+                  🔇
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={state.mute ? 0 : volume}
+                  onChange={(e) => handleVolumeChange(e.target.value)}
+                  className="w-24 accent-[var(--lamp)] cursor-pointer h-1.5"
+                />
+                <span className="text-[11px] font-bold text-[var(--ink)] min-w-[28px] text-right">
+                  {state.mute ? 0 : volume}%
+                </span>
+              </div>
+            )}
+          </div>
           <button
             type="button"
             onClick={toggleTheme}

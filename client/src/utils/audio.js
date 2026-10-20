@@ -1,8 +1,17 @@
 // Web Audio API Synthesizer for Consistracker
 let audioCtx = null;
+let currentVolumeMultiplier = 0.8;
+
+export function setVolumeLevel(level) {
+  currentVolumeMultiplier = Math.max(0, Math.min(1, typeof level === 'number' ? level : 0.8));
+}
+
+export function getVolumeLevel() {
+  return currentVolumeMultiplier;
+}
 
 function getContext(isMuted) {
-  if (isMuted) return null;
+  if (isMuted || currentVolumeMultiplier <= 0.01) return null;
   try {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
     if (audioCtx.state === 'suspended') {
@@ -17,6 +26,7 @@ function getContext(isMuted) {
 function tone(freq, startTime, duration, volume, isMuted) {
   const ctx = getContext(isMuted);
   if (!ctx) return;
+  const scaledVol = volume * currentVolumeMultiplier;
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   const s = ctx.currentTime + startTime;
@@ -24,7 +34,7 @@ function tone(freq, startTime, duration, volume, isMuted) {
   osc.type = 'sine';
   osc.frequency.value = freq;
   gain.gain.setValueAtTime(0, s);
-  gain.gain.linearRampToValueAtTime(volume, s + 0.05);
+  gain.gain.linearRampToValueAtTime(scaledVol, s + 0.05);
   gain.gain.exponentialRampToValueAtTime(0.0001, s + duration);
 
   osc.connect(gain);
@@ -51,7 +61,7 @@ function whoosh(isMuted) {
   src.buffer = buf;
   filter.type = 'bandpass';
   filter.frequency.value = 900;
-  gain.gain.value = 0.1;
+  gain.gain.value = 0.1 * currentVolumeMultiplier;
 
   src.connect(filter);
   filter.connect(gain);

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { playSfx } from '../utils/audio';
+import { triggerConfetti } from '../utils/confetti';
 
 const HABIT_EMOJIS = ['💧', '🏃‍♂️', '📚', '💻', '🧘', '🥗', '💤', '✍️', '🎯', '🎸', '🍎', '⚡', '🧠', '🏋️', '🌿'];
 const HABIT_COLORS = [
@@ -215,6 +216,16 @@ export default function HabitTrackerModal({
     }
   };
 
+  const handleMoveHabit = (index, direction) => {
+    const newIndex = index + direction;
+    if (newIndex < 0 || newIndex >= habits.length) return;
+    const reordered = [...habits];
+    const temp = reordered[index];
+    reordered[index] = reordered[newIndex];
+    reordered[newIndex] = temp;
+    onSaveHabits(reordered);
+  };
+
   const toggleDay = (habit, dateKey) => {
     const history = { ...(habit.history || {}) };
     const wasCompleted = !!history[dateKey];
@@ -233,6 +244,7 @@ export default function HabitTrackerModal({
     const target = habit.monthlyTarget || 20;
 
     if (isNowCompleted && monthlyCount === target) {
+      triggerConfetti();
       playSfx('celebrate', isMuted);
       if (showToast) showToast(`🎉 Monthly Goal Achieved for ${habit.name}! (${monthlyCount}/${target} days)`);
     }
@@ -459,7 +471,29 @@ export default function HabitTrackerModal({
                         {/* Habit Title Column (Sticky) */}
                         <td className="sticky left-0 z-10 bg-[var(--surf)] p-2.5 border-r border-[var(--line)] font-medium text-[var(--ink)]">
                           <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              {/* Reorder Buttons */}
+                              <div className="flex flex-col flex-shrink-0">
+                                <button
+                                  type="button"
+                                  disabled={rIdx === 0}
+                                  onClick={() => handleMoveHabit(rIdx, -1)}
+                                  className="text-[9px] text-[var(--mut)] hover:text-[var(--ink)] disabled:opacity-20 cursor-pointer leading-none p-0.5"
+                                  title="Move Up"
+                                >
+                                  ▲
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={rIdx === habits.length - 1}
+                                  onClick={() => handleMoveHabit(rIdx, 1)}
+                                  className="text-[9px] text-[var(--mut)] hover:text-[var(--ink)] disabled:opacity-20 cursor-pointer leading-none p-0.5"
+                                  title="Move Down"
+                                >
+                                  ▼
+                                </button>
+                              </div>
+
                               <span className="text-base flex-shrink-0">{habit.icon || '💧'}</span>
                               <span className="truncate text-xs sm:text-[13px] font-semibold">{habit.name}</span>
                             </div>
