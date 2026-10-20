@@ -1,0 +1,222 @@
+@import "tailwindcss";
+
+:root {
+  /* Phase 1 & 2 variables */
+  --bg-top: #0B1021;
+  --bg-mid: #17183B;
+  --bg-bot: #3B1C4A;
+  --text-main: #FFFFFF;
+
+  /* Phase 3 Dashboard Variables (Dark Default) */
+  --bg: #191631;
+  --bg2: #241f45;
+  --surf: #262150;
+  --surf2: #2f2960;
+  --ink: #f1ecff;
+  --mut: #a9a2cf;
+  --line: rgba(190, 180, 255, 0.16);
+  --lamp: #f0b25a;
+  --sage: #a6c9a0;
+  --warn: #ef8d7a;
+  color-scheme: dark;
+}
+
+/* Light Theme */
+:root[data-theme="light"] {
+  --bg: #e8eee9;
+  --bg2: #d9e4dd;
+  --surf: #f6f9f6;
+  --surf2: #e3ece6;
+  --ink: #1f1b3d;
+  --mut: #5d5a7e;
+  --line: rgba(31, 27, 61, 0.14);
+  --lamp: #b9680f;
+  --sage: #3f7a4a;
+  --warn: #b2432f;
+  color-scheme: light;
+}
+
+/* Time-based themes for Phase 1 & 2 */
+body.theme-morning { --bg-top: #1D4E89; --bg-mid: #B8456A; --bg-bot: #E07A3F; --text-main: #FFFFFF; }
+body.theme-day { --bg-top: #4CA1AF; --bg-mid: #2C3E50; --bg-bot: #3498DB; --text-main: #F8FAFC; }
+body.theme-evening { --bg-top: #2B1B54; --bg-mid: #EE4266; --bg-bot: #FFD23F; --text-main: #FFFFFF; }
+body.theme-night { --bg-top: #0B1021; --bg-mid: #17183B; --bg-bot: #3B1C4A; --text-main: #FFFFFF; }
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  font-family: 'Instrument Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: var(--ink);
+  background-color: var(--bg);
+  transition: background 0.5s ease, color 0.5s ease;
+}
+
+body.auth-locked {
+  overflow: hidden;
+  height: 100vh;
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  color: var(--text-main);
+  background: linear-gradient(135deg, var(--bg-top) 0%, var(--bg-mid) 50%, var(--bg-bot) 100%);
+}
+
+.serif {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+/* Glass panel */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Day/Night celestial visibility */
+.show-night { opacity: 0; transition: opacity 1s; }
+.show-day { opacity: 0; transition: opacity 1s; }
+body.theme-night .show-night, body.theme-evening .show-night { opacity: 1; }
+body.theme-morning .show-day, body.theme-day .show-day { opacity: 1; }
+
+/* Contrast fixes for evening/day */
+body.theme-evening .p1-wrapper { background-color: rgba(0, 0, 0, 0.5); }
+body.theme-evening .glass-panel { background: rgba(15, 23, 42, 0.6); }
+
+/* Keyframe Animations */
+@keyframes p1-smokeRise {
+  0% { opacity: 0; transform: translateY(0) scale(1); }
+  50% { opacity: 0.6; }
+  100% { opacity: 0; transform: translateY(-40px) scale(2); }
+}
+.p1-smoke { animation: p1-smokeRise 3s infinite ease-out; }
+
+@keyframes p2-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+.p2-shake-error {
+  animation: p2-shake 0.4s ease-in-out;
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
+}
+.p2-success-state {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.5);
+}
+
+/* Mascot & Ritual animations */
+@keyframes hop {
+  30% { transform: translateY(-16px) rotate(-6deg); }
+  60% { transform: translateY(0) rotate(4deg); }
+}
+.pet-hop { animation: hop 0.6s; }
+
+@keyframes glad {
+  50% { transform: translateY(-5px); }
+}
+.pet-glad { animation: glad 2.4s ease-in-out infinite; }
+
+@keyframes zz {
+  0% { opacity: 0; transform: translateY(6px); }
+  50% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+.pet-zz { animation: zz 2.6s infinite; }
+
+@keyframes fl {
+  to { transform: scale(0.96, 1.06) rotate(2deg); }
+}
+
+@keyframes sm {
+  0% { opacity: 0.8; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-90px) scale(1.5); }
+}
+
+@keyframes pf {
+  0% { opacity: 0.9; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(46px); }
+}
+
+@keyframes drift {
+  from { transform: translateX(-40px); }
+  to { transform: translateX(70px); }
+}
+.cloud-drift { animation: drift 45s ease-in-out infinite alternate; }
+
+@keyframes twk {
+  50% { opacity: 0.2; }
+}
+.star-twinkle circle { animation: twk 3.2s infinite ease-in-out; }
+.star-twinkle circle:nth-child(2n) { animation-delay: 1s; }
+.star-twinkle circle:nth-child(3n) { animation-delay: 2s; }
+
+@keyframes shm {
+  to { transform: translateX(16px); opacity: 0.3; }
+}
+.water-shimmer { animation: shm 4s ease-in-out infinite alternate; }
+
+@keyframes jy {
+  50% { transform: translateY(-14px); }
+}
+.stairs-jump { animation: jy 0.7s ease-in-out 2; }
+
+/* =========================================
+   EVENING RITUAL (CALL IT A DAY) EXACT CSS
+   ========================================= */
+#ritual {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; flex-direction: column;
+  justify-content: space-between; align-items: center; text-align: center;
+  background: radial-gradient(circle at 50% 45%, #1b2244, #0f1428 62%, #070a16);
+  cursor: pointer; padding: 34px 20px; overflow: hidden;
+}
+#ritual > * { position: relative; z-index: 1; }
+#ritual::before, #ritual::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none; transition: opacity 1.8s ease;
+}
+#ritual::before {
+  background: radial-gradient(55% 45% at 50% 64%, rgba(240, 178, 90, 0.2), rgba(240, 178, 90, 0.05) 55%, transparent 75%);
+}
+#ritual::after {
+  opacity: 0;
+  background: radial-gradient(45% 35% at 50% 22%, rgba(150, 178, 235, 0.16), transparent 70%), radial-gradient(circle at 50% 50%, transparent 40%, rgba(2, 4, 10, 0.7));
+}
+#ritual.out::before { opacity: 0; }
+#ritual.out::after { opacity: 1; }
+#ritual.out { background: radial-gradient(circle at 50% 45%, #10162b, #080b18 65%, #04060d); }
+#ritual.out .dstage { opacity: 0; transform: scale(0.94); transition: opacity 1.3s ease 0.9s, transform 1.3s ease 0.9s; }
+#ritual > .quote {
+  position: absolute; left: 50%; top: 48%; width: min(90vw, 720px);
+  display: grid; gap: 16px; text-align: center;
+  transform: translate(-50%, -44%); opacity: 0;
+  transition: opacity 1.5s ease 1.9s, transform 1.5s ease 1.9s;
+  pointer-events: none; min-height: 0;
+}
+#ritual > .quote.on { opacity: 1; transform: translate(-50%, -50%); }
+#rq span { font: italic 400 clamp(32px, 6.5vw, 58px)/1.15 Fraunces, Georgia, serif; color: #f6e7b8; }
+#rq small { font: 400 clamp(15px, 2.2vw, 19px)/1.4 'Instrument Sans', sans-serif; color: #aab6d6; letter-spacing: 0.01em; }
+
+.prompt { font: italic 400 clamp(20px, 3.6vw, 28px) Fraunces, serif; color: #f6e7b8; min-height: 40px; }
+.dstage { width: min(76vw, 52vh); aspect-ratio: 400/430; transition: transform 0.6s cubic-bezier(0.34, 1.4, 0.64, 1); }
+.dstage.in { transform: scale(1.05, 0.96); }
+.dstage.ex { transform: scale(0.98, 1.03) translateY(4px); }
+
+#flame { transform-origin: 199px 266px; animation: fl 1.4s infinite alternate ease-in-out; transition: opacity 0.35s, transform 0.35s; }
+#flame.off { opacity: 0; transform: scale(0.3, 1.5) translateY(-18px); animation: none; }
+#glow { transition: opacity 0.8s; }
+#glow.off { opacity: 0; }
+#smoke { opacity: 0; }
+#smoke.on { animation: sm 2.8s ease-out forwards; }
+#puff { opacity: 0; }
+#puff.on { animation: pf 0.75s ease-out forwards; }
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }

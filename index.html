@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="description" content="CONSIStracker: a sarcastic little consistency tracker.">
+    <meta name="theme-color" content="#0B1021">
+    <title>CONSIStracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style id="auth-styles">
+
+        /* =========================================
+           GLOBAL VARIABLES & ENVIRONMENT
+           ========================================= */
+        :root {
+            --bg-top: #0B1021; 
+            --bg-mid: #17183B; 
+            --bg-bot: #3B1C4A;
+            --text-main: #FFFFFF;
+        }
+        
+        /* Time-based themes */
+        body.theme-morning { --bg-top: #1D4E89; --bg-mid: #B8456A; --bg-bot: #E07A3F; --text-main: #FFFFFF; }
+        body.theme-day { --bg-top: #4CA1AF; --bg-mid: #2C3E50; --bg-bot: #3498DB; --text-main: #F8FAFC; }
+        body.theme-evening { --bg-top: #2B1B54; --bg-mid: #EE4266; --bg-bot: #FFD23F; --text-main: #FFFFFF; }
+        body.theme-night { --bg-top: #0B1021; --bg-mid: #17183B; --bg-bot: #3B1C4A; --text-main: #FFFFFF; }
+
+        body.auth-mode {
+            margin: 0; padding: 0; height: 100vh; height: 100dvh; overflow: hidden;
+            font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-top) 0%, var(--bg-mid) 50%, var(--bg-bot) 100%);
+            color: var(--text-main);
+            transition: background 1.5s ease, color 1.5s ease;
+        }
+
+        .show-night { opacity: 0; transition: opacity 1s; }
+        .show-day { opacity: 0; transition: opacity 1s; }
+        body.theme-night .show-night, body.theme-evening .show-night { opacity: 1; }
+        body.theme-morning .show-day, body.theme-day .show-day { opacity: 1; }
+
+        /* Global Utilities */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.45); /* darker tint keeps white text readable on every time-of-day theme */
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+        
+        .fade-out { opacity: 0 !important; pointer-events: none; transition: opacity 0.6s ease-out; }
+        .fade-in { opacity: 1 !important; pointer-events: auto; transition: opacity 0.8s ease-in; }
+
+        /* =========================================
+           PHASE 1 SPECIFIC CSS (.p1- prefix)
+           ========================================= */
+        .p1-wrapper { opacity: 1; transition: opacity 0.6s ease; }
+        
+        @keyframes p1-smokeRise {
+            0% { opacity: 0; transform: translateY(0) scale(1); }
+            50% { opacity: 0.6; }
+            100% { opacity: 0; transform: translateY(-40px) scale(2); }
+        }
+        .p1-smoke { animation: p1-smokeRise 3s infinite ease-out; }
+
+        /* =========================================
+           PHASE 2 SPECIFIC CSS (.p2- prefix)
+           ========================================= */
+        .p2-wrapper { opacity: 0; pointer-events: none; padding-top: max(1.5rem, env(safe-area-inset-top, 0px)); padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px)); }
+        
+        @keyframes p2-shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .p2-shake-error { 
+            animation: p2-shake 0.4s ease-in-out; 
+            border-color: #ef4444 !important; 
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); 
+        }
+        .p2-success-state { 
+            border-color: #22c55e !important; 
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.5); 
+        }
+
+        .p2-day-circle {
+            width: 48px; height: 48px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            transition: all 0.3s ease;
+        }
+        .p2-day-circle.active {
+            border-color: #fff;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.2); font-weight: 700;
+            transform: scale(1.1) translateY(-2px);
+        }
+
+        .p2-input { 
+            background: rgba(0, 0, 0, 0.4); 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            color: #fff; outline: none; transition: all 0.3s; 
+        }
+        .p2-input:focus { border-color: rgba(255, 255, 255, 0.6); background: rgba(0, 0, 0, 0.6); }
+        
+        .p2-btn { 
+            background: rgba(255, 255, 255, 0.15); 
+            border: 1px solid rgba(255, 255, 255, 0.4); 
+            transition: all 0.2s; backdrop-filter: blur(5px);
+        }
+        .p2-btn:hover { 
+            background: rgba(255, 255, 255, 0.3); transform: translateY(-2px); 
+        }
+
+        /* Message Box styling */
+        .msg-box-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px);
+            display: flex; justify-content: center; align-items: center; z-index: 100;
+            opacity: 0; pointer-events: none; visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+        }
+        .msg-box-overlay.active { opacity: 1; pointer-events: auto; visibility: visible; transition-delay: 0s; }
+
+        /* =========================================
+           ACCESSIBILITY & LAYOUT ADDITIONS
+           ========================================= */
+        .sr-only {
+            position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+            overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+        }
+        /* Visible keyboard focus on any background */
+        #auth-gate :focus-visible { outline: 3px solid #FFFFFF; outline-offset: 3px; box-shadow: 0 0 0 6px rgba(0, 0, 0, 0.55); }
+        .p2-input:focus-visible { outline: 3px solid #FFFFFF; outline-offset: 2px; }
+        [tabindex="-1"]:focus { outline: none; box-shadow: none; }
+
+        /* Phase 1: scrolls instead of clipping on short screens; text sits below the duck on phones */
+        .p1-scroll { overflow-y: auto; overflow-x: hidden; padding-top: 300px; }
+        .p1-text { margin-top: auto; margin-bottom: auto; padding-top: 1rem; padding-left: 0.5rem; padding-right: 0.5rem; }
+        .p1-text-sub { text-shadow: 0 1px 14px rgba(0, 0, 0, 0.5); }
+        .p1-continue { flex-shrink: 0; margin-top: 2rem; margin-bottom: max(4rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem)); }
+        @media (min-width: 768px) {
+            .p1-scroll { padding-top: 0; }
+            .p1-text { padding-top: 5rem; }
+        }
+
+        /* Live status under the password field */
+        .p2-status { min-height: 1.5rem; margin-top: 1rem; text-align: center; font-size: 0.875rem; color: #E5E7EB; }
+        .p2-status.is-error { color: #FECACA; }
+        .p2-status.is-ok { color: #BBF7D0; }
+
+        /* Contrast fixes (WCAG AA): only the themes whose bright gradient stops fell short are adjusted.
+           Morning and night are unchanged. Ratios were measured for white and gray-200 text. */
+        body.theme-evening .p1-wrapper { background-color: rgba(0, 0, 0, 0.5); }
+        body.theme-evening .glass-panel { background: rgba(15, 23, 42, 0.6); }
+        body.theme-day #p2-title,
+        body.theme-evening #p2-title {
+            width: fit-content; max-width: 100%; border-radius: 0.5em;
+            background: rgba(0, 0, 0, 0.22);
+            box-shadow: 0 0 24px 14px rgba(0, 0, 0, 0.22);
+        }
+
+        /* Respect reduced-motion preferences (duck artwork is intentionally left untouched) */
+        @media (prefers-reduced-motion: reduce) {
+            .animate-pulse, .p2-shake-error { animation: none !important; }
+            *, *::before, *::after { transition-duration: 0.01ms !important; }
+        }
+    
+    </style>
+    <style id="static-utilities">
+
+*,::before,::after{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}
+html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;-webkit-tap-highlight-color:transparent}
+body{margin:0;line-height:inherit}
+h1,h2,h3,p{margin:0}
+h1,h2,h3{font-size:inherit;font-weight:inherit}
+a{color:inherit;text-decoration:inherit}
+button,input{font-family:inherit;font-size:100%;font-weight:inherit;line-height:inherit;color:inherit;margin:0;padding:0}
+button{text-transform:none;-webkit-appearance :button;background-color:transparent;background-image:none;cursor:pointer}
+button:disabled,input:disabled{cursor:default}
+img,svg,video{display:block;vertical-align:middle}
+img,video{max-width:100%;height:auto}
+::placeholder{opacity:1;color:#9ca3af}
+[hidden]{display:none}
+@keyframes pulse{50%{opacity:.5}}
+.absolute{position:absolute}
+.relative{position:relative}
+.inset-0{inset:0}
+.top-0{top:0}
+.left-0{left:0}
+.top-\[10\%\]{top:10%}
+.top-\[12\%\]{top:12%}
+.top-\[24px\]{top:24px}
+.left-\[5\%\]{left:5%}
+.right-\[5\%\]{right:5%}
+.right-\[10\%\]{right:10%}
+.right-\[12\%\]{right:12%}
+.z-0{z-index:0}
+.z-10{z-index:10}
+.z-20{z-index:20}
+.z-30{z-index:30}
+.z-40{z-index:40}
+.z-50{z-index:50}
+.flex{display:flex}
+.flex-col{flex-direction:column}
+.flex-1{flex:1 1 0%}
+.shrink-0{flex-shrink:0}
+.items-center{align-items:center}
+.items-end{align-items:flex-end}
+.justify-between{justify-content:space-between}
+.justify-center{justify-content:center}
+.gap-2{gap:.5rem}
+.gap-4{gap:1rem}
+.w-full{width:100%}
+.w-auto{width:auto}
+.w-11\/12{width:91.666667%}
+.w-\[120px\]{width:120px}
+.w-\[260px\]{width:260px}
+.h-full{height:100%}
+.h-\[1px\]{height:1px}
+.h-\[120px\]{height:120px}
+.h-\[350px\]{height:350px}
+.h-\[380px\]{height:380px}
+.max-w-sm{max-width:24rem}
+.max-w-3xl{max-width:48rem}
+.max-w-\[700px\]{max-width:700px}
+.mx-auto{margin-left:auto;margin-right:auto}
+.mt-6{margin-top:1.5rem}
+.mt-8{margin-top:2rem}
+.mt-auto{margin-top:auto}
+.mb-2{margin-bottom:.5rem}
+.mb-3{margin-bottom:.75rem}
+.mb-6{margin-bottom:1.5rem}
+.mb-10{margin-bottom:2.5rem}
+.mb-auto{margin-bottom:auto}
+.-mb-8{margin-bottom:-2rem}
+.p-8{padding:2rem}
+.p-10{padding:2.5rem}
+.px-0{padding-left:0;padding-right:0}
+.px-2{padding-left:.5rem;padding-right:.5rem}
+.px-6{padding-left:1.5rem;padding-right:1.5rem}
+.px-10{padding-left:2.5rem;padding-right:2.5rem}
+.py-2{padding-top:.5rem;padding-bottom:.5rem}
+.py-4{padding-top:1rem;padding-bottom:1rem}
+.overflow-visible{overflow:visible}
+.overflow-x-hidden{overflow-x:hidden}
+.overflow-y-auto{overflow-y:auto}
+.object-contain{object-fit:contain}
+.pointer-events-none{pointer-events:none}
+.cursor-pointer{cursor:pointer}
+.rounded-lg{border-radius:.5rem}
+.rounded-xl{border-radius:.75rem}
+.rounded-2xl{border-radius:1rem}
+.rounded-full{border-radius:9999px}
+.rounded-\[2\.5rem\]{border-radius:2.5rem}
+.border-white\/40{border-color:rgba(255,255,255,.4)}
+.border-green-400\/50{border-color:rgba(74,222,128,.5)}
+.bg-black\/40{background-color:rgba(0,0,0,.4)}
+.bg-white\/20{background-color:rgba(255,255,255,.2)}
+.backdrop-blur-sm{-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.opacity-60{opacity:.6}
+.opacity-80{opacity:.8}
+.text-white{color:#fff}
+.text-gray-200{color:#e5e7eb}
+.text-xs{font-size:.75rem;line-height:1rem}
+.text-sm{font-size:.875rem;line-height:1.25rem}
+.text-base{font-size:1rem;line-height:1.5rem}
+.text-lg{font-size:1.125rem;line-height:1.75rem}
+.text-2xl{font-size:1.5rem;line-height:2rem}
+.text-3xl{font-size:1.875rem;line-height:2.25rem}
+.text-5xl{font-size:3rem;line-height:1}
+.text-center{text-align:center}
+.uppercase{text-transform:uppercase}
+.underline{text-decoration-line:underline}
+.font-light{font-weight:300}
+.font-medium{font-weight:500}
+.font-semibold{font-weight:600}
+.font-bold{font-weight:700}
+.leading-relaxed{line-height:1.625}
+.tracking-tighter{letter-spacing:-.05em}
+.tracking-wide{letter-spacing:.025em}
+.tracking-widest{letter-spacing:.1em}
+.tracking-\[0\.2em\]{letter-spacing:.2em}
+.tracking-\[0\.4em\]{letter-spacing:.4em}
+.shadow-sm{box-shadow:0 1px 2px 0 rgba(0,0,0,.05)}
+.shadow-2xl{box-shadow:0 25px 50px -12px rgba(0,0,0,.25)}
+.drop-shadow-md{filter:drop-shadow(0 4px 3px rgba(0,0,0,.07)) drop-shadow(0 2px 2px rgba(0,0,0,.06))}
+.drop-shadow-xl{filter:drop-shadow(0 20px 13px rgba(0,0,0,.03)) drop-shadow(0 8px 5px rgba(0,0,0,.08))}
+.drop-shadow-2xl{filter:drop-shadow(0 25px 25px rgba(0,0,0,.15))}
+.transform{transform:translate(0,0)}
+.scale-95{transform:scale(.95)}
+.transition-colors{transition-property:color,background-color,border-color,text-decoration-color,fill,stroke;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}
+.transition-transform{transition-property:transform;transition-timing-function:cubic-bezier(.4,0,.2,1);transition-duration:.15s}
+.duration-300{transition-duration:.3s}
+.animate-pulse{animation:pulse 2s cubic-bezier(.4,0,.6,1) infinite}
+.hover\:text-white:hover{color:#fff}
+.placeholder\:font-light::placeholder{font-weight:300}
+.placeholder\:tracking-widest::placeholder{letter-spacing:.1em}
+.hidden{display:none}
+@media (min-width:640px){.sm\:flex-row{flex-direction:row}.sm\:text-4xl{font-size:2.25rem;line-height:2.5rem}}
+@media (min-width:768px){.md\:p-14{padding:3.5rem}.md\:px-6{padding-left:1.5rem;padding-right:1.5rem}.md\:right-\[15\%\]{right:15%}.md\:text-base{font-size:1rem;line-height:1.5rem}.md\:text-2xl{font-size:1.5rem;line-height:2rem}.md\:text-4xl{font-size:2.25rem;line-height:2.5rem}.md\:text-5xl{font-size:3rem;line-height:1}.md\:text-7xl{font-size:4.5rem;line-height:1}.md\:w-\[650px\]{width:650px}}
+@media (min-width:1024px){.lg\:w-\[800px\]{width:800px}}
+    
+    </style>
+    <style id="dashboard-styles">
+
+:root{--bg:#191631;--bg2:#241f45;--surf:#262150;--surf2:#2f2960;--ink:#f1ecff;--mut:#a9a2cf;--line:rgba(190,180,255,.16);--lamp:#f0b25a;--sage:#a6c9a0;--warn:#ef8d7a;color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#e8eee9;--bg2:#d9e4dd;--surf:#f6f9f6;--surf2:#e3ece6;--ink:#1f1b3d;--mut:#5d5a7e;--line:rgba(31,27,61,.14);--lamp:#b9680f;--sage:#3f7a4a;--warn:#b2432f;color-scheme:light}}
+:root[data-theme=light]{--bg:#e8eee9;--bg2:#d9e4dd;--surf:#f6f9f6;--surf2:#e3ece6;--ink:#1f1b3d;--mut:#5d5a7e;--line:rgba(31,27,61,.14);--lamp:#b9680f;--sage:#3f7a4a;--warn:#b2432f;color-scheme:light}
+*{box-sizing:border-box;margin:0}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{min-height:100%;background:radial-gradient(120% 70% at 70% -10%,var(--bg2),var(--bg) 60%);background-color:var(--bg);color:var(--ink);font:400 15px/1.5 'Instrument Sans',system-ui,sans-serif;transition:background .5s}
+h1,h2,h3,.serif{font-family:Fraunces,Georgia,serif;font-weight:400;letter-spacing:-.01em}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--lamp);outline-offset:3px}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 20px 80px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:22px}
+.brand{font:600 26px Fraunces,serif}.brand small{display:block;font:italic 400 14px Fraunces,serif;color:var(--mut)}
+.hr{display:flex;align-items:center;gap:10px}
+.when{text-align:right;font-size:13px;color:var(--mut)}.when b{display:block;color:var(--ink);font-weight:600}
+.ib{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:transparent;display:grid;place-items:center;font-size:17px}
+.ib:hover{border-color:var(--lamp)}
+.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:20px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}}
+.box{background:var(--surf);border:1px solid var(--line);border-radius:26px;padding:28px}
+.box h2{font-size:22px;margin-bottom:4px}.sub{color:var(--mut);font-size:13.5px}
+.hero{display:grid;justify-items:center;text-align:center;gap:6px;background:radial-gradient(70% 60% at 50% 38%,color-mix(in srgb,var(--lamp) 16%,transparent),transparent 70%),var(--surf)}
+.ringbtn{position:relative;width:min(290px,72vw);aspect-ratio:1;border:0;background:none;margin:14px 0}
+.ringbtn svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ringbtn .in{position:absolute;inset:0;display:grid;place-content:center;gap:2px}
+.big{font:400 54px/1 Fraunces,serif;font-variant-numeric:tabular-nums}
+.go{font-size:13px;color:var(--lamp);font-weight:600}
+.ringbtn:hover circle.v{filter:drop-shadow(0 0 10px var(--lamp))}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:99px;padding:3px}
+.seg button{border:0;background:none;padding:7px 16px;border-radius:99px;font-size:13px;color:var(--mut)}
+.seg button.on{background:var(--lamp);color:#1b1730;font-weight:600}
+.modehint{font-size:12.5px;color:var(--mut);min-height:19px;margin-top:8px}
+.goalrow{display:flex;gap:10px;align-items:center;justify-content:center;margin-top:10px;font-size:13px;color:var(--mut)}
+select,input{font:inherit;color:var(--ink);background:var(--surf2);border:1px solid var(--line);border-radius:12px;padding:9px 12px;width:100%}
+select{width:auto;padding:5px 10px}
+.stats{display:grid;gap:14px;align-content:start}
+.st{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:16px 0;border-bottom:1px solid var(--line)}
+.st:last-child{border:0}.st .n{font:400 34px Fraunces,serif}.st span{color:var(--mut);font-size:13.5px}
+.row{margin-top:20px}
+.chart{width:100%;height:auto;display:block;margin-top:10px}
+.chart text{fill:var(--mut);font:11px 'Instrument Sans',sans-serif}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:14px}
+.cal i{aspect-ratio:1;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font:normal 11px 'Instrument Sans';color:var(--mut)}
+.cal i.l1{background:color-mix(in srgb,var(--lamp) 30%,transparent)}.cal i.l2{background:color-mix(in srgb,var(--lamp) 65%,transparent);color:#1b1730}.cal i.l3{background:var(--lamp);color:#1b1730;font-weight:600}
+.cal i.t{outline:2px solid var(--ink);outline-offset:1px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.acts{grid-template-columns:1fr}}
+.act{text-align:left;background:var(--surf);border:1px solid var(--line);border-radius:22px;padding:20px 22px;display:grid;gap:3px}
+.act:hover{border-color:var(--lamp)}.act b{font:400 19px Fraunces,serif}.act span{font-size:13px;color:var(--mut)}
+.act.night{background:linear-gradient(135deg,var(--surf),color-mix(in srgb,var(--lamp) 14%,var(--surf)))}
+.log{list-style:none;padding:0;margin-top:10px}
+.log li{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);font-size:14px}
+.log li:last-child{border:0}.log em{font-style:normal;color:var(--mut);font-size:12.5px;margin-right:8px}
+.log .d{border:0;background:none;color:var(--mut);padding:4px 8px;font-size:13px}.log .d:hover{color:var(--warn)}
+.empty{color:var(--mut);padding:14px 0;font-size:14px}
+.land{position:relative;border-radius:20px;overflow:hidden;margin-top:14px;aspect-ratio:2/1;background:#2b2455}
+.land svg{width:100%;height:100%;display:block;transition:filter 1s}
+.land .mist{position:absolute;inset:0;background:linear-gradient(180deg,rgba(235,230,255,.55),rgba(190,180,230,.75));transition:opacity 1s;pointer-events:none}
+.land .cap{position:absolute;left:14px;bottom:14px;background:rgba(20,16,45,.78);color:#f1ecff;padding:7px 13px;border-radius:99px;font-size:12.5px}
+.btn{border:1px solid var(--line);background:var(--surf2);border-radius:99px;padding:11px 22px;font-weight:600;font-size:14px}
+.btn:hover:not(:disabled){border-color:var(--lamp)}.btn:disabled{opacity:.5}
+.btn.p{background:var(--lamp);border-color:var(--lamp);color:#1b1730}.btn.x{color:var(--warn)}
+.ov{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:max(20px,env(safe-area-inset-top,0px)) 20px 20px;background:rgba(14,11,32,.86);backdrop-filter:blur(12px);color:#f1ecff}
+.ov.on{display:flex}
+.dlg{background:var(--surf);color:var(--ink);border:1px solid var(--line);border-radius:26px;padding:28px;width:100%;max-width:460px;max-height:88vh;overflow:auto}
+.dlg h3{font-size:24px;margin-bottom:4px}.dlg label{display:block;font-size:13px;color:var(--mut);margin:14px 0 5px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}.end{display:flex;gap:10px;justify-content:flex-end;margin-top:22px;flex-wrap:wrap}
+#fs{flex-direction:column;gap:10px;text-align:center}
+#fs.on{display:flex}
+.fsn{font:400 clamp(72px,17vw,150px)/1 Fraunces,serif;font-variant-numeric:tabular-nums;text-shadow:0 0 60px color-mix(in srgb,var(--lamp) 55%,transparent)}
+.pill{font-size:13px;color:var(--lamp);border:1px solid var(--line);border-radius:99px;padding:6px 16px}
+#stairs.on,#ritual.on{display:flex}
+#stairs,#ritual{flex-direction:column;text-align:center;gap:8px}
+#ritual{justify-content:space-between;background:radial-gradient(circle at 50% 45%,#1b2244,#0f1428 62%,#070a16);cursor:pointer;z-index:60;padding:34px 20px;overflow:hidden}
+#ritual>*{position:relative;z-index:1}
+#ritual::before,#ritual::after{content:'';position:absolute;inset:0;pointer-events:none;transition:opacity 1.8s ease}
+#ritual::before{background:radial-gradient(55% 45% at 50% 64%,rgba(240,178,90,.2),rgba(240,178,90,.05) 55%,transparent 75%)}
+#ritual::after{opacity:0;background:radial-gradient(45% 35% at 50% 22%,rgba(150,178,235,.16),transparent 70%),radial-gradient(circle at 50% 50%,transparent 40%,rgba(2,4,10,.7))}
+#ritual.out::before{opacity:0}#ritual.out::after{opacity:1}
+#ritual.out .dstage{opacity:0;transform:scale(.94);transition:opacity 1.3s ease .9s,transform 1.3s ease .9s}
+#ritual>.quote{position:absolute;left:50%;top:48%;width:min(90vw,720px);display:grid;gap:16px;text-align:center;transform:translate(-50%,-44%);opacity:0;transition:opacity 1.5s ease 1.9s,transform 1.5s ease 1.9s;pointer-events:none;min-height:0}
+#ritual>.quote.on{opacity:1;transform:translate(-50%,-50%)}
+#rq span{font:italic 400 clamp(32px,6.5vw,58px)/1.15 Fraunces,Georgia,serif;color:#f6e7b8}
+#rq small{font:400 clamp(15px,2.2vw,19px)/1.4 'Instrument Sans',sans-serif;color:#aab6d6;letter-spacing:.01em}
+#ritual.out{background:radial-gradient(circle at 50% 45%,#10162b,#080b18 65%,#04060d)}
+.prompt{font:italic 400 clamp(20px,3.6vw,28px) Fraunces,serif;color:#f6e7b8;min-height:40px}
+.dstage{width:min(76vw,52vh);aspect-ratio:400/430;transition:transform .6s cubic-bezier(.34,1.4,.64,1)}
+.dstage.in{transform:scale(1.05,.96)}.dstage.ex{transform:scale(.98,1.03) translateY(4px)}
+.quote{font:italic 400 clamp(22px,4vw,34px) Fraunces,serif;color:#f6e7b8;max-width:640px;opacity:0;transform:translateY(12px);transition:all 1s;min-height:48px}
+.quote.on{opacity:1;transform:none}
+#flame{transform-origin:199px 266px;animation:fl 1.4s infinite alternate ease-in-out;transition:opacity .35s,transform .35s}
+#flame.off{opacity:0;transform:scale(.3,1.5) translateY(-18px);animation:none}
+@keyframes fl{to{transform:scale(.96,1.06) rotate(2deg)}}
+#glow{transition:opacity .8s}#glow.off{opacity:0}
+#smoke{opacity:0}#smoke.on{animation:sm 2.8s ease-out forwards}
+@keyframes sm{0%{opacity:.8;transform:translateY(0)}100%{opacity:0;transform:translateY(-90px) scale(1.5)}}
+#puff{opacity:0}#puff.on{animation:pf .75s ease-out forwards}
+@keyframes pf{0%{opacity:.9;transform:translateY(0)}100%{opacity:0;transform:translateY(46px)}}
+.stage{position:relative;width:min(640px,100%);height:260px;display:flex;align-items:flex-end;border-bottom:2px solid var(--lamp);margin:18px 0 26px;padding-left:64px}
+.stp{flex:1;background:linear-gradient(180deg,rgba(240,178,90,.14),rgba(240,178,90,.03));border-top:2px solid rgba(240,178,90,.3);border-left:1px solid rgba(240,178,90,.2);font-size:11px;color:#a9a2cf;padding-top:6px;transition:.4s}
+.stp.a{background:linear-gradient(180deg,rgba(240,178,90,.45),rgba(240,178,90,.1));border-top-color:#f0b25a;color:#f0b25a}
+.climb{position:absolute;left:4px;bottom:0;width:62px;height:62px;transition:left .5s cubic-bezier(.34,1.3,.64,1),bottom .5s cubic-bezier(.34,1.3,.64,1)}
+.climb.j{animation:jy .7s ease-in-out 2}@keyframes jy{50%{transform:translateY(-14px)}}
+.sc{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-top:14px}
+.sc div{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--surf2)}.sc p{padding:10px 12px;font-size:12.5px;color:var(--mut)}.sc b{display:block;color:var(--ink);font:400 16px Fraunces,serif}
+.duck{display:flex;gap:14px;align-items:center;border:1px solid var(--line);border-radius:18px;padding:14px;margin-top:16px;background:var(--surf2);cursor:pointer;text-align:left;width:100%}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,30px);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:99px;font-size:13.5px;opacity:0;transition:.3s;z-index:90;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.box.flat{background:none;border:0;border-top:1px solid var(--line);border-radius:0;padding:26px 4px 6px}
+.hero{position:relative}
+.pet{--eo:0;--ec:1;display:block;overflow:visible}.pet.awake{--eo:1;--ec:0}
+.hero .pet{position:absolute;top:18px;left:18px;width:76px;height:82px;cursor:pointer}
+.pet.hop{animation:hop .6s}.pet.glad{animation:glad 2.4s ease-in-out infinite}
+@keyframes hop{30%{transform:translateY(-16px) rotate(-6deg)}60%{transform:translateY(0) rotate(4deg)}}
+@keyframes glad{50%{transform:translateY(-5px)}}
+.zz{position:absolute;top:12px;left:92px;font:italic 15px Fraunces,serif;color:var(--mut);animation:zz 2.6s infinite}
+.pet.awake+.zz{display:none}
+@keyframes zz{0%{opacity:0;transform:translateY(6px)}50%{opacity:1}100%{opacity:0;transform:translateY(-8px)}}
+@media(max-width:560px){.hero .pet{position:static;margin-bottom:-4px}.zz{display:none}}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:18px}.chip{border:1px solid var(--line);background:var(--surf2);border-radius:99px;padding:9px 18px}.chip.on{background:var(--lamp);color:#1b1730;border-color:var(--lamp);font-weight:600}
+#stairs{background:radial-gradient(55% 45% at 50% 72%,rgba(240,178,90,.18),transparent 75%),radial-gradient(circle at 50% 45%,#1b2244,#0f1428 62%,#070a16)}
+.big2{font:italic 400 clamp(40px,8vw,68px)/1.08 Fraunces,Georgia,serif;color:#f6e7b8}
+#stairs .stage{border-bottom-color:rgba(240,178,90,.5)}
+.ib:disabled{opacity:.35;cursor:default}
+.cld{animation:drift 45s ease-in-out infinite alternate}@keyframes drift{from{transform:translateX(-40px)}to{transform:translateX(70px)}}
+.tw circle{animation:twk 3.2s infinite ease-in-out}.tw circle:nth-child(2n){animation-delay:1s}.tw circle:nth-child(3n){animation-delay:2s}@keyframes twk{50%{opacity:.2}}
+.shm{animation:shm 4s ease-in-out infinite alternate}@keyframes shm{to{transform:translateX(16px);opacity:.3}}
+.note{font:italic 400 15px/1.45 Fraunces,Georgia,serif;color:var(--mut);max-width:34ch;margin-top:12px;min-height:44px}
+.chart text{font-size:14px}
+input{font-size:16px}
+@media(max-width:560px){.when{display:none}.brand{font-size:23px}.hr{gap:8px}.box{padding:22px 18px}.act{padding:18px}}
+.remind{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translate(-50%,-20px);display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:min(560px,calc(100vw - 24px));background:var(--surf);border:1px solid var(--lamp);border-radius:22px;padding:12px 16px;box-shadow:0 10px 40px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:.4s;z-index:80}.remind.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}.remind .btn{padding:8px 16px;font-size:13px}
+.land{aspect-ratio:16/7}@media(max-width:700px){.land{aspect-ratio:2/1}}
+#care.box.flat{border:0;padding:4px 4px 0;margin-top:6px}
+#care .grid{display:flex;flex-wrap:wrap;gap:10px 32px;align-items:center}
+#care .grid>div{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#care h2{font:600 13px 'Instrument Sans',sans-serif;color:var(--mut);margin:0}
+#care .grid>div:first-child .sub{display:none}
+#care .goalrow{margin:0!important;gap:8px;font-size:13.5px}
+#care .end{margin:0;gap:4px}
+#care #bkTxt{font-size:12.5px;margin:0;order:3}
+#care .btn{background:none;border:0;padding:4px 6px;font-weight:500;font-size:13.5px;color:var(--ink);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:4px}
+#care .btn:hover{text-decoration-color:var(--lamp)}
+#care input[type=time]{padding:3px 8px;border-radius:10px;font-size:14px}
+.cal i{cursor:pointer;position:relative}.cal i:hover{border-color:var(--lamp)}.cal i.cg::after{content:'';position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:currentColor}
+.cal i.hn,.cal i.hn:hover{border-color:#e5484d;box-shadow:inset 0 0 0 1px #e5484d}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+    </style>
+    <style id="bridge-styles">
+
+        /* Seamless Auth Gate & Dashboard Transition */
+        #auth-gate {
+            position: fixed; inset: 0; z-index: 9999; overflow: hidden;
+            background: linear-gradient(135deg, var(--bg-top) 0%, var(--bg-mid) 50%, var(--bg-bot) 100%);
+            transition: opacity 0.6s ease;
+        }
+        #dashboard-wrapper {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.8s ease-in;
+            min-height: 100vh;
+        }
+        #dashboard-wrapper.fade-in {
+            opacity: 1 !important;
+        }
+
+    </style>
+</head>
+<body class="auth-mode relative">
+
+    <!-- ====================================================
+         PHASE 1 & 2: AUTH GATE (File 1: CONSIStracker)
+         ==================================================== -->
+    <div id="auth-gate">
+<!-- =========================================
+         ENVIRONMENT BACKGROUND
+         ========================================= -->
+    <!-- Night Elements -->
+    <div id="env-night" class="absolute inset-0 pointer-events-none z-0 show-night" aria-hidden="true">
+        <!-- Stars -->
+        <svg class="absolute inset-0 w-full h-full opacity-60">
+            <g fill="white">
+                <circle cx="15%" cy="25%" r="1.5" /><circle cx="35%" cy="10%" r="2" />
+                <circle cx="20%" cy="45%" r="1" /><circle cx="75%" cy="20%" r="2.5" />
+                <circle cx="80%" cy="15%" r="1" /><circle cx="85%" cy="55%" r="1.5" />
+                <circle cx="55%" cy="12%" r="1" /><circle cx="90%" cy="35%" r="2" />
+                <circle cx="65%" cy="65%" r="1.2" /><circle cx="10%" cy="75%" r="1.8" />
+            </g>
+        </svg>
+        
+        <!-- String Lights -->
+        <svg class="absolute top-0 left-0 w-full max-w-[700px] h-[350px] opacity-80" viewBox="0 0 700 350">
+            <path d="M -20,20 Q 180,140 350,60 T 720,10" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+            <g fill="#FEF08A" stroke="#B45309" stroke-width="1.5">
+                <circle cx="90" cy="95" r="10" filter="drop-shadow(0 0 10px #FEF08A)"/>
+                <rect x="84" y="80" width="12" height="10" fill="#374151" stroke="none"/>
+                
+                <circle cx="250" cy="98" r="12" filter="drop-shadow(0 0 15px #FEF08A)"/>
+                <rect x="243" y="83" width="14" height="10" fill="#374151" stroke="none"/>
+                
+                <circle cx="430" cy="58" r="9" filter="drop-shadow(0 0 10px #FEF08A)"/>
+                <rect x="425" y="45" width="10" height="9" fill="#374151" stroke="none"/>
+                
+                <circle cx="580" cy="35" r="11" filter="drop-shadow(0 0 12px #FEF08A)"/>
+                <rect x="573" y="21" width="14" height="10" fill="#374151" stroke="none"/>
+            </g>
+        </svg>
+
+        <!-- Crescent Moon -->
+        <svg class="absolute top-[10%] right-[10%] w-[120px] h-[120px] drop-shadow-2xl" viewBox="0 0 100 100">
+            <path d="M 45 10 A 40 40 0 1 0 95 60 A 45 45 0 1 1 45 10 Z" fill="#FEF08A" filter="drop-shadow(0 0 20px rgba(254, 240, 138, 0.5))"/>
+        </svg>
+    </div>
+
+    <!-- Day Elements (Hidden during night) -->
+    <div id="env-day" class="absolute inset-0 pointer-events-none z-0 show-day" aria-hidden="true">
+        <svg class="absolute top-[12%] right-[12%] w-[120px] h-[120px] drop-shadow-2xl" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" fill="#FDE047" filter="drop-shadow(0 0 40px rgba(253, 224, 71, 0.9))"/>
+        </svg>
+    </div>
+
+
+    <!-- =========================================
+         PHASE 1: INTRO (DUCK & QUOTE)
+         ========================================= -->
+    <div id="phase1-wrapper" role="region" aria-labelledby="p1-title" class="p1-wrapper p1-scroll absolute inset-0 z-50 flex flex-col items-center cursor-pointer bg-black/40 backdrop-blur-sm">
+        
+        <!-- Sarcastic Duck (Upside Down, Top Right) -->
+        <div class="absolute top-0 right-[5%] md:right-[15%] w-[260px] h-[380px] pointer-events-none">
+            <svg viewBox="0 0 250 350" class="w-full h-full drop-shadow-2xl overflow-visible">
+                <!-- Wires -->
+                <g id="p1-wires">
+                    <path d="M 125 0 Q 130 50 125 100" fill="none" stroke="#1F2937" stroke-width="6"/>
+                    <path d="M 125,100 Q 50,150 80,210 T 70,250" fill="none" stroke="#DC2626" stroke-width="4"/>
+                    <path d="M 125,100 Q 180,170 150,230 T 170,260" fill="none" stroke="#475569" stroke-width="3"/>
+                </g>
+                
+                <!-- Duck Body -->
+                <g transform="translate(125, 200) rotate(180)">
+                    <!-- Note Book Dangling -->
+                    <g transform="translate(40, -40) rotate(20)">
+                        <rect x="-15" y="-20" width="30" height="40" fill="#F8FAFC" stroke="#475569" stroke-width="2"/>
+                        <line x1="-10" y1="-10" x2="10" y2="-10" stroke="#94A3B8" stroke-width="1.5"/>
+                        <line x1="-10" y1="0" x2="10" y2="0" stroke="#94A3B8" stroke-width="1.5"/>
+                        <line x1="-10" y1="10" x2="5" y2="10" stroke="#94A3B8" stroke-width="1.5"/>
+                    </g>
+
+                    <path d="M -35,0 C -45,-80 45,-80 35,0 C 35,80 65,120 65,170 C 65,200 -65,200 -65,170 C -65,120 -35,80 -35,0 Z" fill="#F8FAFC" stroke="#94A3B8" stroke-width="3"/>
+                    <!-- Wings -->
+                    <path d="M -35,50 Q -60,100 -50,150" fill="none" stroke="#E2E8F0" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M 35,50 Q 60,100 50,150" fill="none" stroke="#E2E8F0" stroke-width="4" stroke-linecap="round"/>
+                    <!-- Beak -->
+                    <path d="M -30,-10 C -55,20 0,60 30,-10 Z" fill="#EA580C" stroke="#9A3412" stroke-width="2"/> 
+                    <!-- Feet hanging onto wire -->
+                    <path d="M -15,190 L -40,235 L 10,235 Z" fill="#EA580C" stroke="#9A3412" stroke-width="2"/>
+                    <path d="M 15,190 L 40,235 L -10,235 Z" fill="#EA580C" stroke="#9A3412" stroke-width="2"/>
+                    
+                    <!-- 3D Glasses -->
+                    <g id="p1-glasses">
+                        <rect x="-38" y="-55" width="34" height="24" fill="rgba(6, 182, 212, 0.85)" stroke="#0F172A" stroke-width="3" rx="4"/>
+                        <rect x="4" y="-55" width="34" height="24" fill="rgba(239, 68, 68, 0.85)" stroke="#0F172A" stroke-width="3" rx="4"/>
+                        <line x1="-4" y1="-43" x2="4" y2="-43" stroke="#0F172A" stroke-width="4"/>
+                    </g>
+                    
+                    <!-- Cigarette -->
+                    <g id="p1-cig" transform="rotate(-15) translate(-10, 0)">
+                        <rect x="-60" y="10" width="35" height="8" fill="#F1F5F9" stroke="#334155" stroke-width="2"/>
+                        <rect x="-25" y="10" width="12" height="8" fill="#D97706" stroke="#334155" stroke-width="2"/>
+                        <circle cx="-60" cy="14" r="4" fill="#EF4444"/>
+                        <!-- Smoke -->
+                        <path d="M -65,14 Q -80,25 -70,40 T -85,65" fill="none" stroke="rgba(200, 200, 200, 0.7)" stroke-width="4" class="p1-smoke"/>
+                    </g>
+                </g>
+            </svg>
+        </div>
+
+        <!-- Text Block -->
+        <div class="p1-text text-center z-10 pointer-events-none relative">
+            <h1 id="p1-title" class="text-5xl md:text-7xl font-bold tracking-tighter mb-6 drop-shadow-2xl text-white">
+                You Woke Up ? Wow!
+            </h1>
+            <p id="p1-sub" class="p1-text-sub text-lg md:text-2xl font-light max-w-3xl mx-auto px-6 leading-relaxed text-gray-200">
+                The world isn't going to save itself, but maybe start with your to-do list? Or just keep hanging out.
+            </p>
+        </div>
+
+        <!-- Continue Prompt -->
+        <div class="p1-continue">
+            <button type="button" id="p1-continue-btn" class="glass-panel animate-pulse px-10 py-4 rounded-full text-sm font-semibold tracking-widest uppercase text-white border-white/40">
+                Tap anywhere to continue
+            </button>
+        </div>
+    </div>
+
+
+    <!-- =========================================
+         PHASE 2: LOGIN GATE & DIANO
+         ========================================= -->
+    <main id="phase2-wrapper" class="p2-wrapper absolute inset-0 z-40 flex flex-col items-center hidden overflow-y-auto overflow-x-hidden px-2">
+        
+        <!-- Branding -->
+        <h1 id="p2-title" tabindex="-1" class="mt-auto shrink-0 mb-3 text-3xl sm:text-4xl md:text-5xl font-bold tracking-[0.2em] drop-shadow-xl z-30 text-white w-full text-center pointer-events-none">
+            CONSIS<span class="font-light">tracker</span>
+        </h1>
+
+        <div class="relative w-11/12 md:w-[650px] lg:w-[800px] mb-auto flex flex-col items-center shrink-0">
+            
+            <!-- MASCOT (in normal flow so it can never overlap the title) -->
+            <div id="p2-dino-wrap" class="relative z-50 shrink-0 pointer-events-none drop-shadow-2xl flex items-end justify-center -mb-8" style="height: clamp(90px, 19vh, 160px);">
+                <img id="p2-dino-img" src="data:image/webp;base64,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" alt="" width="262" height="326" decoding="async" class="h-full w-auto object-contain">
+            </div>
+
+
+            <!-- Glass Container -->
+            <div class="glass-panel rounded-[2.5rem] p-10 md:p-14 w-full relative z-20 flex flex-col shadow-2xl">
+                <div class="text-center mb-10 mt-6">
+                    <h2 class="text-3xl md:text-4xl font-semibold mb-3 tracking-wide text-white drop-shadow-md">Enter Password</h2>
+                    <p class="text-sm md:text-base font-light tracking-wide text-gray-200">Track your consistency</p>
+                </div>
+                
+                <!-- 7-Day Tracker -->
+                <div class="flex justify-between items-center w-full mb-10 px-0 md:px-6 relative" role="list" aria-label="Focus hours this week">
+                    <div class="absolute top-[24px] left-[5%] right-[5%] h-[1px] bg-white/20 z-0" aria-hidden="true"></div>
+                    
+                    <div class="flex flex-col items-center gap-2 z-10" role="listitem" aria-label="Monday: 1.5 hours"><span class="text-xs font-light text-white" aria-hidden="true">M</span><div class="p2-day-circle" aria-hidden="true">1.5h</div></div>
+                    <div class="flex flex-col items-center gap-2 z-10" role="listitem" aria-label="Tuesday: 2 hours" aria-current="date"><span class="text-xs font-bold text-white shadow-sm" aria-hidden="true">T</span><div class="p2-day-circle active text-base" aria-hidden="true">2h</div></div>
+                    <div class="flex flex-col items-center gap-2 z-10" role="listitem" aria-label="Wednesday: 0 hours"><span class="text-xs font-light text-white" aria-hidden="true">W</span><div class="p2-day-circle" aria-hidden="true">0h</div></div>
+                    <div class="flex flex-col items-center gap-2 z-10" role="listitem" aria-label="Thursday: 4 hours"><span class="text-xs font-light text-white" aria-hidden="true">T</span><div class="p2-day-circle" aria-hidden="true">4h</div></div>
+                    <div class="flex flex-col items-center gap-2 z-10" role="listitem" aria-label="Friday: 1 hour"><span class="text-xs font-light text-white" aria-hidden="true">F</span><div class="p2-day-circle" aria-hidden="true">1h</div></div>
+                    <div class="flex flex-col items-center gap-2 z-10" role="listitem" aria-label="Saturday: 3 hours"><span class="text-xs font-light text-white" aria-hidden="true">S</span><div class="p2-day-circle" aria-hidden="true">3h</div></div>
+                    <div class="flex flex-col items-center gap-2 z-10" role="listitem" aria-label="Sunday: 0.5 hours"><span class="text-xs font-light text-white" aria-hidden="true">S</span><div class="p2-day-circle text-xs" aria-hidden="true">0.5h</div></div>
+                </div>
+                
+                <!-- Inputs -->
+                <form id="p2-form" novalidate autocomplete="off">
+                    <div class="flex flex-col sm:flex-row gap-4 w-full px-0 md:px-6">
+                        <label for="p2-password-input" class="sr-only">Password</label>
+                        <input type="password" id="p2-password-input" name="password" autocomplete="off" aria-describedby="p2-status" aria-invalid="false" placeholder="••••••••" class="p2-input flex-1 px-6 py-4 rounded-xl tracking-[0.4em] font-medium text-lg placeholder:tracking-widest placeholder:font-light">
+                        <button type="submit" id="p2-unlock-btn" class="p2-btn px-10 py-4 rounded-xl font-semibold tracking-wide text-lg text-white">Unlock</button>
+                    </div>
+                    <p id="p2-status" class="p2-status" role="status" aria-live="polite"></p>
+                </form>
+
+                <div class="text-center mt-8 text-sm font-light text-gray-200">
+                    Need help? or <button type="button" id="p2-reset" class="underline hover:text-white transition-colors">Reset password</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Custom Alert Box (Replacing default alert) -->
+    <div id="msg-box" class="msg-box-overlay" role="dialog" aria-modal="true" aria-labelledby="msg-title" aria-describedby="msg-desc" aria-hidden="true">
+        <div class="glass-panel p-8 rounded-2xl text-center max-w-sm w-11/12 transform scale-95 transition-transform duration-300 shadow-2xl border-green-400/50">
+            <h3 id="msg-title" class="text-2xl font-bold text-white mb-2">Access Granted</h3>
+            <p id="msg-desc" class="text-gray-200 font-light mb-6">Entering Dashboard Phase...</p>
+            <button type="button" id="msg-close" class="p2-btn px-6 py-2 rounded-lg text-white font-medium w-full">Continue</button>
+        </div>
+    </div>
+
+    <!-- =========================================
+         JAVASCRIPT
+         ========================================= -->
+    </div>
+
+    <!-- ====================================================
+         PHASE 3: DASHBOARD (File 2: lnpckdc)
+         ==================================================== -->
+    <div id="dashboard-wrapper">
+<svg style="display:none" aria-hidden="true">
+<symbol id="dm" viewBox="0 0 120 120"><g stroke="#26170c" stroke-width="4" stroke-linejoin="round"><path d="M22 86Q8 82 12 68Q20 74 28 74Z" fill="#16a34a"/><path d="M52 18L60 7L66 20ZM68 26L78 18L76 32Z" fill="#16a34a"/><ellipse cx="58" cy="82" rx="28" ry="24" fill="#74f27a"/><circle cx="58" cy="48" r="32" fill="#74f27a"/><ellipse cx="46" cy="102" rx="8" ry="9" fill="#74f27a"/><ellipse cx="70" cy="102" rx="8" ry="9" fill="#74f27a"/></g><ellipse cx="42" cy="52" rx="5.5" ry="3.5" fill="#fb7185"/><ellipse cx="74" cy="52" rx="5.5" ry="3.5" fill="#fb7185"/><circle cx="44" cy="46" r="5" fill="#26170c"/><circle cx="72" cy="46" r="5" fill="#26170c"/><path d="M52 50Q58 55 64 50" fill="none" stroke="#26170c" stroke-width="3.5" stroke-linecap="round"/></symbol>
+<symbol id="dn" viewBox="0 0 400 430"><g fill="#15803d" stroke="#26170c" stroke-width="8" stroke-linejoin="round"><path d="M188 76C198 32 224 34 236 82Z"/><path d="M248 92C284 64 304 84 282 128Z"/><path d="M288 148C324 140 328 168 292 190Z"/><path d="M278 212C308 214 308 238 274 248Z"/></g><g fill="#74f27a" stroke="#26170c" stroke-width="8" stroke-linejoin="round"><path d="M236 318C282 320 294 348 240 356Z"/><path d="M142 256C126 300 130 356 200 358 266 356 268 300 252 256Z"/><ellipse cx="198" cy="176" rx="102" ry="92"/></g><ellipse cx="150" cy="130" rx="38" ry="22" fill="#b9ffb9" opacity=".55" transform="rotate(-24 150 130)"/><ellipse cx="122" cy="202" rx="14" ry="9" fill="#fb7185"/><ellipse cx="264" cy="202" rx="14" ry="9" fill="#fb7185"/><g style="opacity:var(--eo,1)" fill="#26170c"><circle cx="136" cy="186" r="15"/><circle cx="250" cy="186" r="15"/><circle cx="141" cy="181" r="5" fill="#fff"/><circle cx="255" cy="181" r="5" fill="#fff"/></g><g style="opacity:var(--ec,0)" fill="none" stroke="#26170c" stroke-width="7" stroke-linecap="round"><path d="M120 190Q136 202 152 190"/><path d="M234 190Q250 202 266 190"/></g><path d="M176 198Q195 210 214 198" fill="none" stroke="#26170c" stroke-width="7" stroke-linecap="round"/><g fill="#74f27a" stroke="#26170c" stroke-width="7"><ellipse cx="146" cy="290" rx="20" ry="30" transform="rotate(14 146 290)"/><ellipse cx="252" cy="290" rx="20" ry="30" transform="rotate(-14 252 290)"/><ellipse cx="152" cy="344" rx="24" ry="27"/><ellipse cx="238" cy="344" rx="24" ry="27"/></g><g fill="#15803d"><path d="M152 358C138 348 138 336 146 336 150 336 152 341 152 341 152 341 154 336 158 336 166 336 166 348 152 358Z"/><path d="M238 358C224 348 224 336 232 336 236 336 238 341 238 341 238 341 240 336 244 336 252 336 252 348 238 358Z"/></g></symbol>
+<symbol id="dk" viewBox="0 0 120 120"><ellipse cx="60" cy="72" rx="34" ry="26" fill="#fbbf24"/><circle cx="64" cy="44" r="22" fill="#fbbf24"/><path d="M78 42Q96 40 90 49Q84 54 76 50Z" fill="#f97316"/><circle cx="68" cy="40" r="3.5" fill="#26170c"/><ellipse cx="52" cy="74" rx="16" ry="10" fill="#f59e0b"/></symbol>
+<symbol id="ls" viewBox="0 0 600 300"><defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2f7a"/><stop offset=".6" stop-color="#e58f6a"/><stop offset="1" stop-color="#f6c978"/></linearGradient></defs><rect width="600" height="300" fill="url(#sk)"/><circle cx="410" cy="170" r="44" fill="#fde7a3"/><path d="M0 200Q120 130 250 190T500 170T600 190V300H0Z" fill="#6b5aa8"/><path d="M0 240Q150 180 300 235T600 215V300H0Z" fill="#43397e"/><g fill="#231c4f"><path d="M80 300l22-90 22 90zM130 300l16-66 16 66zM470 300l24-100 24 100zM525 300l15-60 15 60zM30 300l14-50 14 50z"/></g><path d="M0 275Q200 255 330 280T600 265V300H0Z" fill="#1c1640"/></symbol>
+</svg>
+
+<div class="wrap">
+<header>
+ <div class="brand">Consistracker<small>a little progress, every day</small></div>
+ <div class="hr"><div class="when"><b id="dt"></b><span id="tm"></span></div>
+ <button class="ib" onclick="openSc()" title="Scrapbook" aria-label="Open scrapbook">📖</button>
+ <button class="ib mt" onclick="toggleMute()" title="Sound on or off">🔔</button>
+ <button class="ib" onclick="theme()" title="Switch light or dark" aria-label="Switch theme">◐</button></div>
+</header>
+
+<div class="grid">
+ <section class="box hero"><svg class="pet" id="pet" onclick="poke()" role="img" aria-label="Diano"><use href="#dn"/></svg><span class="zz" id="zz">z z</span>
+  <h2 id="hd">Ready when you are</h2>
+  <p class="sub" id="hs">Tap the lamp to start a focus session.</p>
+  <button class="ringbtn" onclick="startT()" aria-label="Start focus session">
+   <svg viewBox="0 0 240 240"><circle cx="120" cy="120" r="108" fill="none" stroke="var(--line)" stroke-width="10"/><circle class="v" id="ring" cx="120" cy="120" r="108" fill="none" stroke="var(--lamp)" stroke-width="10" stroke-linecap="round" stroke-dasharray="678.6" stroke-dashoffset="678.6" style="transition:stroke-dashoffset .8s"/></svg>
+   <span class="in"><span class="big" id="tdone">0:00</span><span class="sub" id="tof">of 2h today</span><span class="go">Start session</span></span>
+  </button>
+  <div class="seg" role="group" aria-label="Focus mode"><button id="mOpen" class="on" onclick="mode('open')">Flexible</button><button id="mStrict" onclick="mode('strict')">Strict</button></div>
+  <p class="modehint" id="mh"></p>
+  <div class="goalrow">Daily goal <select id="goal" onchange="setGoal(this.value)" aria-label="Daily goal"><option value=".5">30 min</option><option value="1">1 hour</option><option value="2">2 hours</option><option value="3">3 hours</option><option value="4">4 hours</option><option value="6">6 hours</option></select></div>
+  <p class="note" id="dnote"></p>
+ </section>
+ <section class="box stats">
+  <div><h2 id="wtitle">This week</h2><p class="sub" id="split"></p></div>
+  <div class="st"><span>Current streak</span><b class="n" id="streak">0 days</b></div>
+  <div class="st"><span>Focus time</span><b class="n" id="wtot">0h</b></div>
+  <div class="st"><span>Sessions logged</span><b class="n" id="wcnt">0</b></div>
+ </section>
+</div>
+
+<div class="grid row">
+ <section class="box flat"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2>Your study journey</h2><span><button class="ib" style="width:34px;height:34px" onclick="wkGo(1)" aria-label="Previous week">‹</button> <button class="ib" id="wkn" style="width:34px;height:34px" onclick="wkGo(-1)" aria-label="Next week">›</button></span></div><p class="sub">Daily focus against your goal. The dashed line is today’s target.</p><svg class="chart" id="chart" viewBox="0 0 520 210" role="img" aria-label="Weekly focus chart"></svg><svg class="chart" id="trend" viewBox="0 0 520 84" role="img" aria-label="Eight week trend"></svg><p class="sub" id="trendTxt"></p></section>
+ <section class="box flat"><h2 id="mlabel">This month</h2><p class="sub" id="msub"></p><div class="cal" id="cal"></div></section>
+</div>
+
+<div class="acts row">
+ <button class="act" onclick="openM()"><b>Add hours manually</b><span>Log study that happened away from the timer.</span></button>
+ <button class="act night" onclick="openRitual()"><b>Call it a day</b><span>Close the chapter. Diano will blow out the candle.</span></button>
+</div>
+
+<div class="grid row">
+ 
+ <section class="box flat" style="grid-column:1/-1"><h2>The monthly mist</h2><p class="sub" id="mist">Every day you study at least 5 minutes lifts a little more fog.</p>
+  <div class="land" id="land"><svg viewBox="0 0 600 300" id="lsvg" preserveAspectRatio="xMidYMid slice"></svg><div class="mist" id="mistEl"></div><div class="cap" id="cap"></div></div>
+  <div class="end" style="justify-content:flex-start;align-items:center"><select id="scene" onchange="pickScene(this.value)" aria-label="Choose this month’s scene"></select><button class="btn" id="upb" onclick="$('pf').click()">Use my photo</button><button class="btn x" id="rmph" onclick="rmPhoto()" style="display:none">Remove photo</button><input type="file" id="pf" accept="image/*" hidden onchange="setPhoto(this)"><button class="btn" onclick="keep()">Keep this month</button></div>
+ </section>
+</div>
+</div>
+
+<div class="ov" id="fs" role="dialog" aria-label="Focus session">
+ <div class="pill" id="fsm"></div><div class="fsn" id="fsn">0:00</div><div class="sub" id="fsp" style="min-height:22px;color:var(--lamp)"></div>
+ <div class="end" style="justify-content:center"><button class="btn" id="pr" onclick="pause()">Pause</button><button class="btn x" id="es" onclick="endT()">End session</button></div>
+</div>
+<div class="ov" id="warn" style="z-index:70"><div class="dlg" style="text-align:center"><h3>You left the page</h3><p class="sub" style="margin-top:6px">Strict mode paused your timer so your record stays honest.</p><div class="end" style="justify-content:center"><button class="btn p" onclick="resumeW()">Resume focus</button></div></div></div>
+
+<div class="ov" id="stairs"><span class="pill">Session saved</span><h2 class="big2">Well done.</h2><div class="serif" style="font-size:22px;color:#f0b25a" id="sdur"></div><p class="sub" id="smsg" style="max-width:420px;color:#c9c3ee"></p>
+ <div class="stage" id="stage"><svg class="climb" id="climb"><use href="#dn"/></svg></div><button class="btn p" onclick="closeStairs()">Back to today</button></div>
+
+<div class="ov" id="man"><div class="dlg"><h3>Add hours manually</h3><p class="sub">These count toward your goal and streak, and are marked as manual. You can also delete anything logged on the chosen date.</p>
+ <label for="md">Date</label><input type="date" id="md" onchange="mList()">
+ <div class="two"><div><label for="mh2">Hours</label><input type="number" id="mh2" min="0" max="16" value="1"></div><div><label for="mm">Minutes</label><input type="number" id="mm" min="0" max="59" value="0"></div></div>
+ <label for="mn">Note (optional)</label><input type="text" id="mn" placeholder="e.g. Two chapters of organic chemistry"><div id="mList" style="margin-top:6px"></div>
+ <div class="end"><button class="btn" onclick="closeO('man')">Cancel</button><button class="btn p" onclick="saveM()">Save study time</button></div></div></div>
+
+<div class="ov" id="scr"><div class="dlg" style="max-width:760px"><div style="display:flex;justify-content:space-between;gap:10px"><div><h3>Scrapbook</h3><p class="sub">Months you chose to keep.</p></div><button class="btn" onclick="closeO('scr')">Close</button></div>
+ <button class="duck" onclick="quack()"><svg width="56" height="56"><use href="#dk"/></svg><span><b class="serif" style="font-size:16px;font-weight:400">Scrapbook Duck</b><br><span class="sub" id="dq">Tap me. I have opinions about rest.</span></span></button>
+ <div class="sc" id="sc"></div></div></div>
+
+<div class="ov" id="ritual" onclick="blow()">
+ <button class="ib mt" onclick="event.stopPropagation();toggleMute()" style="position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:16px;z-index:2;color:#f1ecff">🔔</button>
+ <div><span class="pill" style="color:#c9d3ee">Tonight</span><div class="prompt" id="rp">Tap anywhere and Diano will blow out the candle</div></div>
+ <svg class="dstage" id="ds" viewBox="0 0 400 430"><defs><radialGradient id="gl"><stop offset="0" stop-color="#fde6a8" stop-opacity=".55"/><stop offset=".5" stop-color="#f0b25a" stop-opacity=".18"/><stop offset="1" stop-color="#facc15" stop-opacity="0"/></radialGradient><radialGradient id="gf" cx=".45" cy=".38" r=".6"><stop offset="0" stop-color="#98fb98"/><stop offset=".7" stop-color="#72ef76"/><stop offset="1" stop-color="#5ce062"/></radialGradient></defs>
+  <g fill="#15803d" stroke="#26170c" stroke-width="8" stroke-linejoin="round"><path d="M188 76C198 32 224 34 236 82Z"/><path d="M248 92C284 64 304 84 282 128Z"/><path d="M288 148C324 140 328 168 292 190Z"/><path d="M278 212C308 214 308 238 274 248Z"/></g>
+  <g fill="url(#gf)" stroke="#26170c" stroke-width="8" stroke-linejoin="round"><path d="M236 318C282 320 294 348 240 356Z"/><path d="M142 256C126 300 130 356 200 358 266 356 268 300 252 256Z"/><ellipse cx="198" cy="176" rx="102" ry="92"/></g>
+  <circle id="glow" cx="200" cy="250" r="86" fill="url(#gl)"/>
+  <ellipse cx="122" cy="202" rx="14" ry="9" fill="#fb7185"/><ellipse cx="264" cy="202" rx="14" ry="9" fill="#fb7185"/>
+  <g id="eo" fill="#26170c"><circle cx="136" cy="186" r="15"/><circle cx="250" cy="186" r="15"/></g>
+  <g id="ec" style="display:none" fill="none" stroke="#26170c" stroke-width="7" stroke-linecap="round"><path d="M120 186Q136 198 152 186"/><path d="M234 186Q250 198 266 186"/></g>
+  <path id="ms" d="M176 196Q195 206 214 196" fill="none" stroke="#26170c" stroke-width="7" stroke-linecap="round"/><ellipse id="mb" cx="196" cy="201" rx="8" ry="10" fill="#26170c" style="display:none"/>
+  <g id="puff" fill="none" stroke="#bae6fd" stroke-width="4" stroke-linecap="round"><path d="M196 212Q190 232 182 248"/><path d="M198 212Q202 234 210 250"/></g>
+  <rect x="176" y="274" width="46" height="68" rx="10" fill="#fde6ba" stroke="#26170c" stroke-width="6"/><line x1="199" y1="264" x2="199" y2="277" stroke="#26170c" stroke-width="5" stroke-linecap="round"/>
+  <g id="smoke"><path d="M199 262C188 244 212 228 196 208 184 192 208 176 198 160" fill="none" stroke="#cbd5e1" stroke-width="5" stroke-linecap="round"/></g>
+  <g id="flame"><path d="M199 224C182 244 182 264 199 266 216 264 216 244 199 224Z" fill="#f97316"/><path d="M199 236C190 248 190 262 199 264 208 262 208 248 199 236Z" fill="#fef08a"/></g>
+  <g fill="url(#gf)" stroke="#26170c" stroke-width="7" stroke-linejoin="round"><path d="M145 280C154 274 178 278 186 290 192 298 186 314 174 314 162 314 144 304 145 280Z"/><path d="M253 280C244 274 220 278 212 290 206 298 212 314 224 314 236 314 254 304 253 280Z"/><ellipse cx="152" cy="344" rx="24" ry="27"/><ellipse cx="238" cy="344" rx="24" ry="27"/></g>
+  <g fill="#15803d"><path d="M152 358C138 348 138 336 146 336 150 336 152 341 152 341 152 341 154 336 158 336 166 336 166 348 152 358Z"/><path d="M238 358C224 348 224 336 232 336 236 336 238 341 238 341 238 341 240 336 244 336 252 336 252 348 238 358Z"/></g></svg>
+ <div class="quote" id="rq"><span>“You did what you could today. Now you can rest.”</span><small>Tomorrow, be 0.1% ahead of today.</small></div>
+ <div onclick="event.stopPropagation()" style="display:grid;justify-items:center;gap:14px">
+  <div><button class="btn p" id="sw" style="display:none" onclick="closeO('ritual')">Sleep well</button> <button class="btn" id="rb" onclick="closeO('ritual')">Back</button></div></div>
+</div>
+<div class="ov" id="wel" role="dialog" aria-label="Welcome"><div class="dlg" style="text-align:center"><svg class="pet awake hop" style="width:104px;height:112px;margin:0 auto"><use href="#dn"/></svg><h3>Hi, I’m Diano</h3><p class="sub" style="margin-top:6px">Pick a daily goal small enough to keep on your worst day. You can change it any time.</p><div class="chips" id="chips"></div><div class="end" style="justify-content:center"><button class="btn p" onclick="finishWel()">Set my goal</button></div></div></div>
+<div class="remind" id="remind" role="alert"><span id="remt"></span><button class="btn p" onclick="remGo()">Call it a day</button><button class="btn" onclick="remLater()">In 30 min</button><button class="ib" style="width:34px;height:34px" onclick="remHide()" aria-label="Dismiss reminder">×</button></div>
+<section class="box flat" id="care"><div class="grid" style="gap:28px"><div><h2>Evening reminder</h2><p class="sub">A gentle nudge to call it a day. It shows while this page is open, and as a notification if you allow them.</p><div class="goalrow" style="justify-content:flex-start;margin-top:14px"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="remOn" onchange="remToggle(this)" style="width:auto"> Remind me at</label><input type="time" id="remT" onchange="remTime(this.value)" style="width:auto"></div></div><div><h2>Back up your history</h2><p class="sub" id="bkTxt"></p><div class="end" style="justify-content:flex-start"><button class="btn" onclick="exportData()">Export backup</button><button class="btn" onclick="$('imp').click()">Import backup</button><input type="file" id="imp" accept="application/json,.json" hidden onchange="importData(this)"></div></div></div></section>
+<div class="ov" id="dg" role="dialog" aria-label="Goal for a day"><div class="dlg" style="max-width:380px"><h3 id="dgT">Goal</h3><p class="sub" id="dgS"></p><label for="dgH">Study goal (hours)</label><input type="number" id="dgH" min="0.25" max="16" step="0.25"><label for="dgN">Goal in words (optional)</label><input type="text" id="dgN" maxlength="120" placeholder="e.g. Finish chapter 4 and 10 practice questions"><div class="end"><button class="btn" onclick="closeO('dg')">Cancel</button><button class="btn x" id="dgR" onclick="saveDayGoal(true)">Reset day</button><button class="btn p" onclick="saveDayGoal(false)">Save goal</button></div></div></div>
+<div class="toast" id="toast" role="status"></div>
+    </div>
+
+    <!-- ====================================================
+         SCRIPTS: DASHBOARD (lnpckdc) & AUTH GATE (CONSIStracker)
+         ==================================================== -->
+    <script>
+window.consisUnlocked = false;
+
+/* --- File 2: Dashboard Engine --- */
+const KEY='consistracker_v4',$=id=>document.getElementById(id);
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let S={goal:2,dayGoals:{},dayNotes:{},sessions:[],scrap:[],closed:[],scene:{},photo:{},mute:false,welcomed:false,rem:{on:false,t:'21:30'},remDay:'',snooze:0,lastBackup:''};
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2200)}
+function openO(id){$(id).classList.add('on')}function closeO(id){$(id).classList.remove('on')}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')['man','scr','dg'].forEach(closeO)});
+function theme(){const r=document.documentElement;const dark=r.dataset.theme?r.dataset.theme==='dark':!matchMedia('(prefers-color-scheme:light)').matches;r.dataset.theme=dark?'light':'dark'}
+function clock(){const n=new Date();$('dt').textContent=n.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});$('tm').textContent=n.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}
+setInterval(clock,10000);clock();
+const secOn=d=>S.sessions.filter(s=>s.date===d).reduce((a,s)=>a+s.sec,0);
+const fmt=t=>{t=Math.floor(t);const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}`};
+const hrs=s=>s/3600;
+const goalLbl=g=>g<1?Math.round(g*60)+' min':g===1?'1 hour':g+' hours';
+function render(){
+ const today=iso(new Date()),G=goalFor(today),gs=G*3600;$('goal').value=String(S.goal);
+ const ts=secOn(today),pct=Math.min(1,ts/gs);
+ $('ring').style.strokeDashoffset=678.6*(1-pct);
+ $('tdone').textContent=fmt(ts);petState(pct);$('tof').textContent='of '+goalLbl(G)+' today';
+ $('hd').textContent=pct>=1?'Goal reached':ts>0?'Keep the lamp lit':'Ready when you are';
+ const tn=(S.dayNotes||{})[today];$('hs').textContent=pct<1&&tn?'Today’s plan: '+tn:pct>=1?'Anything more is a bonus. Rest is allowed too.':ts>0?Math.ceil((gs-ts)/60)+' minutes to go.':'Tap the lamp to start a focus session.';
+ // week
+ const n=new Date(),mon=new Date(n);mon.setDate(n.getDate()-((n.getDay()+6)%7));mon.setDate(mon.getDate()-7*wk);
+ let tot=0,timed=0,man=0,cnt=0,bars='';const L='MTWTFSS',W=520,H=210,base=170,max=Math.max(G,...Array.from({length:7},(_,i)=>{const d=new Date(mon);d.setDate(mon.getDate()+i);return hrs(secOn(iso(d)))}))*1.15;
+ for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);const k=iso(d);const es=S.sessions.filter(s=>s.date===k);es.forEach(s=>{tot+=s.sec;cnt++;s.type==='manual'?man+=s.sec:timed+=s.sec});
+  const h=hrs(es.reduce((a,s)=>a+s.sec,0)),bh=h/max*150,x=20+i*72,t=k===today;
+  bars+=`<rect x="${x}" y="${base-Math.max(bh,3)}" width="44" height="${Math.max(bh,3)}" rx="10" fill="${h>=goalFor(k)?'var(--lamp)':'var(--sage)'}" opacity="${h?(t?1:.7):.25}"/><text x="${x+22}" y="${base-Math.max(bh,3)-6}" text-anchor="middle">${h?h.toFixed(1)+'h':''}</text><text x="${x+22}" y="192" text-anchor="middle" style="${t?'fill:var(--ink);font-weight:600':''}">${L[i]}</text>`}
+ const gy=base-G/max*150;
+ $('chart').innerHTML=bars+`<line x1="8" x2="${W-8}" y1="${gy}" y2="${gy}" stroke="var(--lamp)" stroke-dasharray="4 5" opacity=".8"/>`;
+ $('wtot').textContent=hrs(tot).toFixed(1)+'h';$('wtitle').textContent=wk?'Week of '+mon.toLocaleDateString('en-US',{month:'short',day:'numeric'}):'This week';$('wkn').disabled=wk===0;trend();$('wcnt').textContent=cnt;
+ $('split').textContent=`${hrs(timed).toFixed(1)}h timed, ${hrs(man).toFixed(1)}h added manually`;
+ // streak
+ let st=0,d=new Date();if(secOn(iso(d))<300)d.setDate(d.getDate()-1);
+ while(secOn(iso(d))>=300){st++;d.setDate(d.getDate()-1)}
+ $('streak').textContent=st+(st===1?' day':' days');dnote(st,ts,pct);
+ // month
+ const y=n.getFullYear(),m=n.getMonth(),dim=new Date(y,m+1,0).getDate(),off=(new Date(y,m,1).getDay()+6)%7;
+ let q=0,c='';for(let i=0;i<off;i++)c+='<span></span>';
+ for(let i=1;i<=dim;i++){const k=iso(new Date(y,m,i)),s=secOn(k);if(s>=300)q++;const dg=goalFor(k)*3600,lv=s>=dg?3:s>=dg/2?2:s>=300?1:0;c+=`<i role="button" tabindex="0" data-d="${k}" class="${lv?'l'+lv:''} ${k===today?'t':''} ${S.dayGoals[k]!=null||(S.dayNotes&&S.dayNotes[k])?'cg':''} ${S.dayNotes&&S.dayNotes[k]?'hn':''}" title="${k}: ${(s/60|0)} min, goal ${goalLbl(goalFor(k))}${esc((S.dayNotes||{})[k]?' — '+S.dayNotes[k]:'')}">${i}</i>`}
+ $('cal').innerHTML=c;$('mlabel').textContent=n.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+ $('msub').textContent=`${q} of ${dim} days with at least 5 minutes. Brighter dots mean you got closer to that day’s goal. Tap a date to set a custom goal; a small dot marks custom days.`;
+ // mist
+ const p=q/dim;const phUrl=S.photo&&S.photo[mk()];$('lsvg').innerHTML=phUrl?`<image href="${phUrl}" width="600" height="300" preserveAspectRatio="xMidYMid slice"/>`:land(sceneIdx(),'m');$('rmph').style.display='none';$('upb').style.display=phUrl?'none':'';$('scene').disabled=!!phUrl;$('mist').textContent=phUrl?'Your photo is set for this month. The mist clears with every study day, and you can choose a new one next month.':'Every day you study at least 5 minutes lifts a little more fog.';$('scene').value=sceneIdx();$('lsvg').style.filter=`blur(${(16*(1-p)).toFixed(1)}px)`;$('mistEl').style.opacity=(1-p).toFixed(2);
+ $('cap').textContent=Math.round(p*100)+'% clear · '+q+' study days';
+ // log
+ const rec=[...S.sessions].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)).slice(0,6);
+ const lg=$('log');if(lg)lg.innerHTML=rec.length?rec.map(s=>`<li><span><em>${s.type==='manual'?'Manual':'Timed'}</em>${esc(s.note)}</span><span>${s.date.slice(5)} · <b>${Math.max(1,Math.round(s.sec/60))}m</b> <button class="d" onclick="del('${s.id}')" aria-label="Delete session">Remove</button></span></li>`).join(''):'<li class="empty">Nothing logged yet. Start the timer, or add hours you’ve already done.</li>';
+}
+function del(id){S.sessions=S.sessions.filter(s=>s.id!==id);save();render();toast('Session removed')}
+function mList(){const el=$('mList');if(!el)return;const d=$('md').value,es=S.sessions.filter(s=>s.date===d);
+ el.innerHTML=es.length?'<label>Already logged on this date</label>'+es.map(s=>`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px"><span><em style="font-style:normal;color:var(--mut);font-size:12.5px;margin-right:8px">${s.type==='manual'?'Manual':'Timed'}</em>${esc(s.note)} · <b>${Math.max(1,Math.round(s.sec/60))}m</b></span><button class="btn x" style="padding:5px 12px;font-size:13px" onclick="delM('${s.id}')">Delete</button></div>`).join(''):''}
+function delM(id){del(id);mList()}
+function setGoal(v){S.goal=parseFloat(v);save();render()}
+// timer
+const T={mode:'open',run:false,paused:false,sec:0,last:0,iv:null,id:''};
+function mode(m){T.mode=m;$('mOpen').classList.toggle('on',m==='open');$('mStrict').classList.toggle('on',m==='strict');$('mh').textContent=m==='strict'?'Leaving this tab pauses the timer until you come back.':'Pause whenever you need. Paused time is never counted.'}
+mode('open');
+function startT(){sfx('start');wake();T.run=true;T.paused=false;T.sec=0;T.last=performance.now();T.id='t'+Date.now();
+ $('fsm').textContent=T.mode==='strict'?'Strict mode':'Flexible mode';$('fsn').textContent='0:00';$('fsp').textContent='';$('pr').textContent='Pause';$('es').disabled=false;openO('fs');
+ clearInterval(T.iv);T.iv=setInterval(tick,250)}
+function tick(){const now=performance.now();if(T.run&&!T.paused){T.sec+=(now-T.last)/1000;$('fsn').textContent=fmt(T.sec);document.title=fmt(T.sec)+' · Consistracker'}T.last=now}
+function pause(){if(!T.run)return;tick();T.paused=!T.paused;$('pr').textContent=T.paused?'Resume':'Pause';$('fsp').textContent=T.paused?'Paused. This time isn’t counted.':''}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&T.run&&!T.paused&&T.mode==='strict'){tick();T.paused=true;$('pr').textContent='Resume';$('fsp').textContent='Paused because you left the tab.';openO('warn')}else if(!document.hidden)T.last=performance.now()});
+function resumeW(){closeO('warn');T.paused=false;T.last=performance.now();$('pr').textContent='Pause';$('fsp').textContent=''}
+function endT(){if(!T.run)return;sfx('end');tick();$('es').disabled=true;clearInterval(T.iv);T.run=false;document.title='Consistracker';const s=Math.floor(T.sec);closeO('fs');
+ if(s>0){S.sessions.push({id:T.id,date:iso(new Date()),sec:s,type:'timed',note:'Focus session'});save();render()}stairs(s)}
+// stairs
+let stT=[];
+function stairs(sec){stT.forEach(clearTimeout);stT=[];const st=$('stage'),cl=$('climb');st.querySelectorAll('.stp').forEach(e=>e.remove());
+ const m=sec/60,u=m>75?30:15;for(let i=1;i<=5;i++){const e=document.createElement('div');e.className='stp';e.style.height=i*44+'px';e.textContent=u*i+'m';e.id='sp'+i;st.appendChild(e)}
+ cl.classList.remove('j');cl.style.left='4px';cl.style.bottom='0px';
+ const mm=Math.floor(sec/60),ss=sec%60;$('sdur').textContent=mm?`${mm} minute${mm>1?'s':''}${ss?` ${ss}s`:''} focused`:`${ss} second${ss!==1?'s':''} focused`;
+ $('smsg').textContent=mm>=60?'A long, deep stretch. You reached the top step.':mm>=30?'Steady, meaningful progress. This is how habits form.':mm>=15?'A solid block in the bank.':'Showing up counts. Tomorrow’s session starts easier.';
+ const tgt=Math.min(5,Math.max(sec>0?1:0,Math.ceil(m/u)));openO('stairs');
+ const go=i=>{const e=$('sp'+i);cl.style.left=(e.offsetLeft+e.offsetWidth/2-31)+'px';cl.style.bottom=i*44+'px';e.classList.add('a')};
+ if(matchMedia('(prefers-reduced-motion:reduce)').matches){for(let i=1;i<=tgt;i++)go(i);return}
+ for(let i=1;i<=tgt;i++)stT.push(setTimeout(()=>{go(i);if(i===tgt)setTimeout(()=>cl.classList.add('j'),450)},i*520))}
+function closeStairs(){stT.forEach(clearTimeout);closeO('stairs')}
+// manual
+function openM(){$('md').value=iso(new Date());$('mh2').value=1;$('mm').value=0;$('mn').value='';mList();openO('man')}
+function saveM(){const h=Math.min(16,Math.max(0,parseInt($('mh2').value)||0)),m=Math.min(59,Math.max(0,parseInt($('mm').value)||0)),d=$('md').value;
+ if(!d){toast('Pick a date first');return}if(h*60+m<1){toast('Enter at least 1 minute');return}
+ S.sessions.push({id:'m'+Date.now(),date:d,sec:h*3600+m*60,type:'manual',note:$('mn').value.trim()||'Manual entry'});save();render();closeO('man');toast('Study time added')}
+// scrapbook
+function keep(){const n=new Date(),lab=n.toLocaleDateString('en-US',{month:'long',year:'numeric'}),y=n.getFullYear(),m=n.getMonth(),dim=new Date(y,m+1,0).getDate();let q=0;
+ for(let i=1;i<=dim;i++)if(secOn(iso(new Date(y,m,i)))>=300)q++;
+ const note=prompt('Add a note to remember this month by:','Every quiet session cleared a little fog.');if(note===null)return;
+ const i=S.scrap.findIndex(x=>x.label===lab);const e={label:lab,days:q,dim,sc:sceneIdx(),ph:(S.photo||{})[mk()]||null,note:note||'Consistent effort, day by day.'};i>=0?S.scrap[i]=e:S.scrap.unshift(e);save();openSc();toast('Month kept')}
+function openSc(){$('sc').innerHTML=S.scrap.length?S.scrap.map((s,k)=>`<div><svg viewBox="0 0 600 300" style="width:100%;display:block;filter:blur(${(10*(1-s.days/s.dim)).toFixed(1)}px)">${s.ph?`<image href="${s.ph}" width="600" height="300" preserveAspectRatio="xMidYMid slice"/>`:land(s.sc||0,'s'+k)}</svg><p><b>${esc(s.label)}</b>${s.days} of ${s.dim} days<br>“${esc(s.note)}”</p></div>`).join(''):'<p class="empty" style="grid-column:1/-1">No months kept yet. Use “Keep this month” beside the mist to save one here.</p>';openO('scr')}
+const dq=['Even ten minutes of reading counts. Quack.','A missed day isn’t a failure. The mist just waits.','Rest is part of the schedule, not a gap in it.','You’re doing better than you think.'];let di=0;
+function quack(){di=(di+1)%dq.length;$('dq').textContent=dq[di]}
+// ritual
+let out=false,busy=false;
+function openRitual(){out=false;busy=false;const r=$('ritual');r.classList.remove('out');$('ds').classList.remove('in','ex');$('ms').style.display='';$('mb').style.display='none';$('eo').style.display='';$('ec').style.display='none';
+ ['puff','smoke'].forEach(i=>$(i).classList.remove('on'));$('flame').classList.remove('off');$('glow').classList.remove('off');$('rq').classList.remove('on');$('sw').style.display='none';$('rb').style.display='';$('rp').textContent='Tap anywhere and Diano will blow out the candle';openO('ritual')}
+function blow(){if(out||busy)return;busy=true;sfx('blow');const ds=$('ds');$('rp').textContent='Diano takes a slow breath…';ds.classList.add('in');$('eo').style.display='none';$('ec').style.display='';
+ setTimeout(()=>{ds.classList.replace('in','ex');$('ms').style.display='none';$('mb').style.display='';$('puff').classList.add('on');setTimeout(snuff,320)},450)}
+function snuff(){out=true;$('ritual').classList.add('out');$('flame').classList.add('off');$('glow').classList.add('off');$('smoke').classList.add('on');
+ setTimeout(()=>{$('ds').classList.remove('ex');$('mb').style.display='none';$('ms').style.display='';$('ec').style.display='none';$('eo').style.display=''},550);
+ $('rp').textContent='Goodnight.';$('rq').classList.add('on');$('sw').style.display='';$('rb').style.display='none';
+ const t=iso(new Date());if(!S.closed.includes(t)){S.closed.push(t);save()}}
+/* pet */
+function petState(p){const e=$('pet');e.classList.toggle('awake',T.run||p>=1);e.classList.toggle('glad',p>=1&&!T.run)}
+function wake(){const e=$('pet');e.classList.add('awake','hop');setTimeout(()=>e.classList.remove('hop'),700)}
+function poke(){const e=$('pet');e.classList.remove('hop');void e.getBoundingClientRect();e.classList.add('hop');toast(e.classList.contains('awake')?'Diano waves back':'Shh, Diano is resting')}
+/* sound */
+let AC;function ac(){if(S.mute)return null;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC}catch(e){return null}}
+function tone(f,t,d,v){const a=ac();if(!a)return;const o=a.createOscillator(),g=a.createGain(),s=a.currentTime+t;o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(v,s+.05);g.gain.exponentialRampToValueAtTime(.0001,s+d);o.connect(g);g.connect(a.destination);o.start(s);o.stop(s+d+.05)}
+function whoosh(){const a=ac();if(!a)return;const n=Math.floor(a.sampleRate*.7),b=a.createBuffer(1,n,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*(1-i/n);const s=a.createBufferSource(),f=a.createBiquadFilter(),g=a.createGain();s.buffer=b;f.type='bandpass';f.frequency.value=900;g.gain.value=.1;s.connect(f);f.connect(g);g.connect(a.destination);s.start()}
+function sfx(k){if(k==='start'){tone(392,0,1.2,.07);tone(587,.18,1.4,.06)}else if(k==='end'){[523,659,784].forEach((f,i)=>tone(f,i*.22,2,.06))}else{whoosh();tone(196,.5,2.5,.05);tone(147,.5,3,.04)}}
+function muteUI(){document.querySelectorAll('.mt').forEach(b=>{b.textContent=S.mute?'🔕':'🔔';b.setAttribute('aria-label',S.mute?'Unmute sounds':'Mute sounds')})}
+function toggleMute(){S.mute=!S.mute;save();muteUI();if(!S.mute)tone(523,0,.8,.05);toast(S.mute?'Sounds off':'Sounds on')}
+/* scenes */
+const SC=[{n:'Pine dusk',k:'pine',p:['#3a2f7a','#e58f6a','#f6c978','#fde7a3','#6b5aa8','#43397e','#231c4f','#1c1640']},{n:'Sea at dawn',k:'sea',p:['#2d4a7a','#e8a0a0','#ffd9a8','#fff0c8','#5e86b0','#3e648f','#2b4a70','#1f3856']},{n:'Desert dunes',k:'dune',p:['#7a3d5c','#e0795a','#f4b86a','#ffe0a0','#c46a4a','#9c4a3c','#6e3132','#4d2328']},{n:'Alpine night',k:'peak',p:['#0f1b3d','#2f4a8a','#7f9fd0','#e8eefc','#40588f','#2a3d6d','#18254a','#101a36']},{n:'Spring meadow',k:'pine',p:['#3d6a8a','#9fcfa8','#f4e9a0','#fffbd0','#6fa070','#4d8058','#2f5a3a','#234530']},{n:'Autumn ridge',k:'peak',p:['#5a2d3d','#d9733f','#f2b35c','#ffe3a6','#a65a3a','#7d3f32','#4f2a2a','#33201f']}];
+const mk=()=>iso(new Date()).slice(0,7),sceneIdx=()=>S.scene&&S.scene[mk()]!=null?S.scene[mk()]:new Date().getMonth()%SC.length;
+function land(i,u){const o=SC[i%SC.length],c=o.p,k=o.k;let h=`<defs><linearGradient id="s${u}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c[0]}"/><stop offset=".6" stop-color="${c[1]}"/><stop offset="1" stop-color="${c[2]}"/></linearGradient></defs><rect width="600" height="300" fill="url(#s${u})"/><circle cx="410" cy="170" r="44" fill="${c[3]}"/><g class="tw" fill="#fff"><circle cx="60" cy="38" r="1.8"/><circle cx="170" cy="22" r="1.4"/><circle cx="260" cy="48" r="1.6"/><circle cx="350" cy="26" r="1.4"/><circle cx="520" cy="40" r="1.8"/><circle cx="560" cy="90" r="1.3"/></g><g class="cld" fill="#fff" opacity=".28"><ellipse cx="130" cy="84" rx="46" ry="10"/><ellipse cx="162" cy="76" rx="28" ry="9"/><ellipse cx="480" cy="64" rx="40" ry="9"/></g>`;
+ if(k==='sea')h+=`<rect y="190" width="600" height="110" fill="${c[4]}"/><path d="M410 190V300" stroke="${c[3]}" stroke-width="60" opacity=".35"/><path class="shm" d="M20 215h120M300 235h200M80 262h160M380 270h180" stroke="${c[5]}" stroke-width="3" opacity=".7"/><path d="M0 290Q200 270 400 292T600 280V300H0Z" fill="${c[7]}"/>`;
+ else if(k==='dune')h+=`<path d="M0 210Q150 150 320 215T600 190V300H0Z" fill="${c[4]}"/><path d="M0 250Q200 190 400 250T600 235V300H0Z" fill="${c[5]}"/><path d="M0 285Q250 250 600 280V300H0Z" fill="${c[7]}"/>`;
+ else if(k==='peak')h+=`<path d="M0 230L120 120L190 190L300 90L420 200L500 140L600 220V300H0Z" fill="${c[4]}"/><path d="M0 260L100 190L220 250L340 170L470 255L600 200V300H0Z" fill="${c[5]}"/><path d="M0 285Q250 260 600 285V300H0Z" fill="${c[7]}"/>`;
+ else h+=`<path d="M0 200Q120 130 250 190T500 170T600 190V300H0Z" fill="${c[4]}"/><path d="M0 240Q150 180 300 235T600 215V300H0Z" fill="${c[5]}"/><path d="M80 300l22-90 22 90zM130 300l16-66 16 66zM470 300l24-100 24 100zM525 300l15-60 15 60zM30 300l14-50 14 50z" fill="${c[6]}"/><path d="M0 275Q200 255 330 280T600 265V300H0Z" fill="${c[7]}"/>`;return h}
+function pickScene(v){if(S.photo&&S.photo[mk()])return;S.scene[mk()]=+v;save();render();toast('Scene changed')}
+$('scene').innerHTML=SC.map((s,i)=>`<option value="${i}">${s.n}</option>`).join('');
+/* welcome */
+let wg=S.goal;
+function chips(){$('chips').innerHTML=[.5,1,2,3,4].map(g=>`<button class="chip ${g===wg?'on':''}" onclick="wg=${g};chips()">${goalLbl(g)}</button>`).join('')}
+function finishWel(){S.goal=wg;S.welcomed=true;save();closeO('wel');render();toast('Goal set to '+goalLbl(wg))}
+let wk=0;
+function wkMon(o){const n=new Date(),m=new Date(n.getFullYear(),n.getMonth(),n.getDate());m.setDate(m.getDate()-((n.getDay()+6)%7)-7*o);return m}
+function wkTot(o){const m=wkMon(o);let t=0;for(let i=0;i<7;i++){const d=new Date(m);d.setDate(m.getDate()+i);t+=secOn(iso(d))}return t}
+function wkGo(d){wk=Math.max(0,wk+d);render()}
+function trend(){const v=[];for(let o=7;o>=0;o--)v.push(wkTot(o)/3600);const mx=Math.max(...v,1),pts=v.map((h,i)=>[20+i*68.5,52-h/mx*40]);
+ $('trend').innerHTML=`<path d="${pts.map((p,i)=>(i?'L':'M')+p[0]+' '+p[1]).join('')}" fill="none" stroke="var(--lamp)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`+pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="var(--lamp)"/>`).join('')+`<text x="20" y="80">8 weeks ago</text><text x="500" y="80" text-anchor="end">this week</text>`;
+ const a=v[7],b=v[6];$('trendTxt').textContent=a===0&&b===0?'Your eight-week trend appears here once you’ve logged a few days.':b===0?'First week on the board.':a>=b?`Up ${Math.round((a-b)/b*100)}% on last week.`:`Down ${Math.round((b-a)/b*100)}% from last week. Rest weeks happen.`}
+function dnote(st,ts,p){const h=new Date().getHours();let t;
+ if(h>=23||h<4)t='It’s late. Water, then sleep. Tomorrow will still be there.';
+ else if(p>=1)t='Goal done. Anything more is a bonus, and rest is allowed.';
+ else if(ts>0&&p>=.5)t='More than halfway. Keep the lamp lit.';
+ else if(ts>0)t='Good start. The first minutes are the hardest part.';
+ else if(st===0)t='Fresh start. Ten focused minutes counts as a real session.';
+ else if(st<3)t='Day '+st+'. The first few days are the hardest to repeat.';
+ else if(st<7)t=st+' days running. This is how a habit forms.';
+ else t=st+' days in a row. You’re someone who shows up.';
+ $('dnote').textContent=t}
+function setPhoto(inp){const f=inp.files&&inp.files[0];inp.value='';if(!f)return;if(S.photo&&S.photo[mk()]){toast('Your photo for this month is already set');return}if(!f.type.startsWith('image/')){toast('Choose an image file');return}
+ const r=new FileReader();r.onerror=()=>toast('Couldn’t read that photo');r.onload=()=>{const im=new Image();im.onerror=()=>toast('Couldn’t open that photo. Try a JPG or PNG.');im.onload=()=>{const sc=Math.min(1,900/im.width),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+ let url;try{url=c.toDataURL('image/jpeg',.8)}catch(e){toast('Couldn’t process that photo');return}
+ S.photo=S.photo||{};S.photo[mk()]=url;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){delete S.photo[mk()];toast('Not enough storage for that photo. Try a smaller one.');return}render();toast('Photo set. The mist clears as you study.')};im.src=r.result};r.readAsDataURL(f)}
+function rmPhoto(){if(S.photo)delete S.photo[mk()];save();render();toast('Photo removed')}
+muteUI();render();
+if(!S.welcomed && window.consisUnlocked){chips();openO('wel')}
+/* backup */
+const okImg=u=>typeof u==='string'&&/^data:image[/](jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(u),okDay=d=>typeof d==='string'&&/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(d),okMon=k=>/^[0-9]{4}-[0-9]{2}$/.test(k);
+function bkInfo(){$('bkTxt').textContent=(S.lastBackup?'Last backup: '+S.lastBackup+'. ':'No backup yet. ')+'Saved only in this browser.'}
+async function exportData(){const data=JSON.stringify({app:'consistracker',version:4,exported:new Date().toISOString(),state:S},null,1),name='consistracker-backup-'+iso(new Date())+'.json';let d=null;try{d=await claude.use('downloads')}catch(e){}
+ if(d){try{await d.save({filename:name,data});S.lastBackup=iso(new Date());save();bkInfo();toast('Backup saved');return}catch(e){if(e&&e.code==='declined')return}}
+ try{await navigator.clipboard.writeText(data);toast('Backup copied. Paste it into a note to keep it.')}catch(e){toast('Couldn’t save a backup here')}}
+function importData(inp){const f=inp.files&&inp.files[0];inp.value='';if(!f)return;const r=new FileReader();r.onerror=()=>toast('Couldn’t read that file');
+ r.onload=()=>{let j;try{j=JSON.parse(r.result)}catch(e){toast('That isn’t a valid backup file');return}
+ const s=j&&j.app==='consistracker'?j.state:null;if(!s||!Array.isArray(s.sessions)){toast('That isn’t a Consistracker backup');return}
+ const ids=new Set(S.sessions.map(x=>x.id));let add=0;
+ s.sessions.forEach(x=>{if(!x)return;const id=String(x.id||'').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,60);if(id&&!ids.has(id)&&okDay(x.date)&&Number.isFinite(x.sec)&&x.sec>0&&x.sec<=86400){S.sessions.push({id,date:x.date,sec:Math.round(x.sec),type:x.type==='manual'?'manual':'timed',note:String(x.note||'').slice(0,200)});ids.add(id);add++}});
+ (Array.isArray(s.scrap)?s.scrap:[]).forEach(x=>{if(x&&typeof x.label==='string'&&!S.scrap.some(y=>y.label===x.label)){const e={label:x.label.slice(0,40),days:+x.days||0,dim:+x.dim||30,sc:(+x.sc||0)%SC.length,note:String(x.note||'').slice(0,200)};if(okImg(x.ph))e.ph=x.ph;S.scrap.push(e)}});
+ (Array.isArray(s.closed)?s.closed:[]).forEach(d=>{if(okDay(d)&&!S.closed.includes(d))S.closed.push(d)});
+ if(s.dayGoals&&typeof s.dayGoals==='object')Object.keys(s.dayGoals).forEach(k=>{const v=s.dayGoals[k];if(okDay(k)&&S.dayGoals[k]==null&&typeof v==='number'&&v>=0.25&&v<=16)S.dayGoals[k]=v});
+ if(s.dayNotes&&typeof s.dayNotes==='object')Object.keys(s.dayNotes).forEach(k=>{const v=s.dayNotes[k];if(okDay(k)&&!S.dayNotes[k]&&typeof v==='string'&&v.trim())S.dayNotes[k]=v.slice(0,120)});
+ if(s.scene&&typeof s.scene==='object')Object.keys(s.scene).forEach(k=>{if(okMon(k)&&S.scene[k]==null&&Number.isInteger(s.scene[k]))S.scene[k]=s.scene[k]});
+ if(s.photo&&typeof s.photo==='object')Object.keys(s.photo).forEach(k=>{if(okMon(k)&&!S.photo[k]&&okImg(s.photo[k]))S.photo[k]=s.photo[k]});
+ try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('Not enough storage to import everything')}
+ render();toast(add?'Imported '+add+' session'+(add>1?'s':''):'Nothing new to import')};r.readAsText(f)}
+/* reminder */
+const tl=t=>{const [h,m]=t.split(':').map(Number);return new Date(2000,0,1,h,m).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})},passed=t=>{const [h,m]=t.split(':').map(Number),n=new Date();return n.getHours()*60+n.getMinutes()>=h*60+m};
+function remToggle(cb){S.rem.on=cb.checked;S.snooze=0;S.remDay=cb.checked&&passed(S.rem.t)?iso(new Date()):'';save();
+ if(cb.checked){try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission()}catch(e){}toast('Reminder set for '+tl(S.rem.t)+(passed(S.rem.t)?', starting tomorrow':''));checkRem()}else toast('Reminder off')}
+function remTime(v){S.rem.t=v||'21:30';S.snooze=0;S.remDay=passed(S.rem.t)?iso(new Date()):'';save();if(S.rem.on)toast('Reminder moved to '+tl(S.rem.t))}
+function checkRem(){const r=S.rem;if(!r||!r.on)return;const t=iso(new Date());if(S.remDay&&S.remDay!==t&&S.snooze)S.snooze=0;
+ if(S.closed.includes(t)||!passed(r.t))return;if(S.snooze&&Date.now()<S.snooze)return;if(S.remDay===t&&!S.snooze)return;
+ S.remDay=t;S.snooze=0;save();showRem()}
+function showRem(){if(!window.consisUnlocked)return;$('remt').textContent='It’s '+new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})+'. Ready to call it a day?';$('remind').classList.add('on');
+ try{if(document.hidden&&'Notification' in window&&Notification.permission==='granted')new Notification('Consistracker',{body:'Ready to call it a day?'})}catch(e){}}
+function remHide(){$('remind').classList.remove('on')}
+function remGo(){remHide();openRitual()}
+function remLater(){remHide();S.snooze=Date.now()+30*60000;save()}
+function goalFor(k){return S.dayGoals&&S.dayGoals[k]!=null?S.dayGoals[k]:S.goal}var dgK='';
+function openGoal(k){dgK=k;S.dayGoals=S.dayGoals||{};$('dgT').textContent=new Date(k+'T00:00:00').toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});$('dgS').textContent='Your default is '+goalLbl(S.goal)+'. A custom goal applies to this day only.';$('dgH').value=goalFor(k);$('dgN').value=(S.dayNotes||{})[k]||'';$('dgR').style.display=S.dayGoals[k]!=null||(S.dayNotes&&S.dayNotes[k])?'':'none';openO('dg');setTimeout(()=>$('dgH').focus(),50)}
+function saveDayGoal(reset){S.dayGoals=S.dayGoals||{};S.dayNotes=S.dayNotes||{};if(reset){delete S.dayGoals[dgK];delete S.dayNotes[dgK]}else{const v=parseFloat($('dgH').value);if(!(v>=0.25&&v<=16)){toast('Enter a goal between 0.25 and 16 hours');return}S.dayGoals[dgK]=Math.round(v*100)/100;const t=$('dgN').value.trim().slice(0,120);if(t)S.dayNotes[dgK]=t;else delete S.dayNotes[dgK]}save();closeO('dg');render();toast(reset?'Back to your default goal':'Goal saved')}
+$('cal').addEventListener('click',e=>{const i=e.target.closest('i[data-d]');if(i)openGoal(i.dataset.d)});
+$('cal').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&e.target.dataset.d){e.preventDefault();openGoal(e.target.dataset.d)}});
+$('remOn').checked=!!S.rem.on;$('remT').value=S.rem.t;bkInfo();document.querySelector('.wrap').appendChild($('care'));checkRem();setInterval(checkRem,30000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkRem()});
+
+/* --- File 1: Auth & Mascot Engine --- */
+document.addEventListener('DOMContentLoaded', () => {
+            
+            // 0. Randomizer: sarcastic message + mascot accessories (new on every refresh)
+            const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+            const messages = [
+                ["You Woke Up ? Wow!", "The world isn't going to save itself, but maybe start with your to-do list? Or just keep hanging out."],
+                ["Oh, You're Back.", "Your goals called. They said they're starting to feel like a rumor."],
+                ["Look Who Showed Up!", "Bold of you to open a consistency tracker after yesterday's performance."],
+                ["Day 1. Again.", "Consistency is just Day 1 repeated with better PR. Let's pretend this is the real one."],
+                ["Productivity Awaits.", "Right after you scroll for 'just five more minutes'. We've seen how that goes."],
+                ["Ah, The Procrastinator.", "Don't worry, the deadline is also thinking about you. Constantly."],
+                ["Still Alive? Great.", "Low bar, I know. But hey, you cleared it. Now try the second one."],
+                ["Motivation Not Found.", "Discipline, however, is on a different shelf. Go get it."],
+                ["Wow, A Visitor.", "Your streak says 'It's complicated.' Let's fix that, shall we?"],
+                ["Rise And Grind.", "Or rise and stare at the ceiling. We track both, but only one counts."]
+            ];
+            let mi = Math.floor(Math.random() * messages.length);
+            try {
+                const last = parseInt(localStorage.getItem('consis-last-msg'), 10);
+                if (messages.length > 1 && mi === last) mi = (mi + 1) % messages.length;
+                localStorage.setItem('consis-last-msg', String(mi));
+            } catch (e) {}
+            document.getElementById('p1-title').textContent = messages[mi][0];
+            document.getElementById('p1-sub').textContent = messages[mi][1];
+
+            // Duck glasses (drawn in the duck's own rotated coordinate space)
+            const glassesOptions = [
+                // 3D glasses
+                `<rect x="-38" y="-55" width="34" height="24" fill="rgba(6, 182, 212, 0.85)" stroke="#0F172A" stroke-width="3" rx="4"/>
+                 <rect x="4" y="-55" width="34" height="24" fill="rgba(239, 68, 68, 0.85)" stroke="#0F172A" stroke-width="3" rx="4"/>
+                 <line x1="-4" y1="-43" x2="4" y2="-43" stroke="#0F172A" stroke-width="4"/>`,
+                // Sunglasses
+                `<rect x="-40" y="-55" width="36" height="22" fill="#0F172A" stroke="#020617" stroke-width="2" rx="8"/>
+                 <rect x="4" y="-55" width="36" height="22" fill="#0F172A" stroke="#020617" stroke-width="2" rx="8"/>
+                 <line x1="-4" y1="-47" x2="4" y2="-47" stroke="#020617" stroke-width="4"/>
+                 <line x1="-34" y1="-50" x2="-26" y2="-44" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+                 <line x1="10" y1="-50" x2="18" y2="-44" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>`,
+                // Nerd round glasses
+                `<circle cx="-20" cy="-43" r="14" fill="rgba(255,255,255,0.25)" stroke="#1E293B" stroke-width="3"/>
+                 <circle cx="20" cy="-43" r="14" fill="rgba(255,255,255,0.25)" stroke="#1E293B" stroke-width="3"/>
+                 <line x1="-6" y1="-43" x2="6" y2="-43" stroke="#1E293B" stroke-width="3"/>`,
+                // Fancy monocle
+                `<circle cx="20" cy="-43" r="14" fill="rgba(255,255,255,0.25)" stroke="#CA8A04" stroke-width="3"/>
+                 <path d="M 34 -40 Q 50 -10 40 20" fill="none" stroke="#CA8A04" stroke-width="2"/>`
+            ];
+
+            // What the duck holds in its beak
+            const mouthOptions = [
+                // Cigarette (original)
+                `<rect x="-60" y="10" width="35" height="8" fill="#F1F5F9" stroke="#334155" stroke-width="2"/>
+                 <rect x="-25" y="10" width="12" height="8" fill="#D97706" stroke="#334155" stroke-width="2"/>
+                 <circle cx="-60" cy="14" r="4" fill="#EF4444"/>
+                 <path d="M -65,14 Q -80,25 -70,40 T -85,65" fill="none" stroke="rgba(200, 200, 200, 0.7)" stroke-width="4" class="p1-smoke"/>`,
+                // Coffee mug
+                `<rect x="-62" y="2" width="28" height="26" rx="4" fill="#F8FAFC" stroke="#334155" stroke-width="2"/>
+                 <path d="M -34 8 Q -22 8 -34 22" fill="none" stroke="#334155" stroke-width="3"/>
+                 <path d="M -54 -2 Q -60 -14 -52 -24" fill="none" stroke="rgba(200, 200, 200, 0.8)" stroke-width="4" class="p1-smoke"/>
+                 <path d="M -44 -2 Q -50 -14 -42 -24" fill="none" stroke="rgba(200, 200, 200, 0.8)" stroke-width="4" class="p1-smoke"/>`,
+                // Lollipop
+                `<line x1="-14" y1="14" x2="-62" y2="14" stroke="#F1F5F9" stroke-width="4"/>
+                 <circle cx="-72" cy="14" r="13" fill="#EC4899" stroke="#9D174D" stroke-width="2"/>
+                 <path d="M -72 14 m -7 0 a 7 7 0 1 1 7 7" fill="none" stroke="#fff" stroke-width="2.5"/>`,
+                // Toothpick
+                `<line x1="-14" y1="14" x2="-70" y2="8" stroke="#D6A75E" stroke-width="3" stroke-linecap="round"/>`
+            ];
+
+            const glassesEl = document.getElementById('p1-glasses');
+            const mouthEl = document.getElementById('p1-cig');
+            if (glassesEl) glassesEl.innerHTML = pick(glassesOptions);
+            if (mouthEl) mouthEl.innerHTML = pick(mouthOptions);
+
+            // Dino image: uses diano.png; shows a simple placeholder if the file is missing
+            const dinoImg = document.getElementById('p2-dino-img');
+            const dinoFallback = () => {
+                const wrap = document.getElementById('p2-dino-wrap');
+                if (!wrap || wrap.querySelector('svg')) return;
+                if (dinoImg) dinoImg.style.display = 'none';
+                wrap.insertAdjacentHTML('beforeend', `
+                    <svg viewBox="0 0 150 150" class="w-full h-full" aria-hidden="true">
+                        <!-- Back spikes -->
+                        <path d="M 50 36 Q 52 18 64 28 Z" fill="#34D399" stroke="#065F46" stroke-width="2.5" stroke-linejoin="round"/>
+                        <path d="M 70 26 Q 76 6 88 22 Z" fill="#34D399" stroke="#065F46" stroke-width="2.5" stroke-linejoin="round"/>
+                        <path d="M 96 30 Q 112 18 114 38 Z" fill="#34D399" stroke="#065F46" stroke-width="2.5" stroke-linejoin="round"/>
+                        <!-- Tail -->
+                        <path d="M 98 118 Q 128 122 132 100 Q 120 112 100 104 Z" fill="#6EE7B7" stroke="#065F46" stroke-width="3" stroke-linejoin="round"/>
+                        <!-- Body + belly -->
+                        <ellipse cx="75" cy="114" rx="28" ry="25" fill="#6EE7B7" stroke="#065F46" stroke-width="3"/>
+                        <ellipse cx="75" cy="120" rx="16" ry="15" fill="#D1FAE5"/>
+                        <!-- Arms -->
+                        <ellipse cx="46" cy="110" rx="7" ry="10" fill="#6EE7B7" stroke="#065F46" stroke-width="3" transform="rotate(25 46 110)"/>
+                        <ellipse cx="104" cy="110" rx="7" ry="10" fill="#6EE7B7" stroke="#065F46" stroke-width="3" transform="rotate(-25 104 110)"/>
+                        <!-- Feet -->
+                        <ellipse cx="60" cy="138" rx="11" ry="7" fill="#6EE7B7" stroke="#065F46" stroke-width="3"/>
+                        <ellipse cx="90" cy="138" rx="11" ry="7" fill="#6EE7B7" stroke="#065F46" stroke-width="3"/>
+                        <path d="M 57 137 L 57 141 M 63 137 L 63 141 M 87 137 L 87 141 M 93 137 L 93 141" stroke="#065F46" stroke-width="1.8" stroke-linecap="round"/>
+                        <!-- Head -->
+                        <ellipse cx="75" cy="66" rx="48" ry="42" fill="#6EE7B7" stroke="#065F46" stroke-width="3"/>
+                        <ellipse cx="62" cy="46" rx="14" ry="7" fill="#FFFFFF" opacity="0.35" transform="rotate(-20 62 46)"/>
+                        <!-- Eyes -->
+                        <ellipse cx="54" cy="68" rx="6.5" ry="8" fill="#0F172A"/>
+                        <ellipse cx="96" cy="68" rx="6.5" ry="8" fill="#0F172A"/>
+                        <circle cx="56.5" cy="64.5" r="2.6" fill="#FFFFFF"/>
+                        <circle cx="98.5" cy="64.5" r="2.6" fill="#FFFFFF"/>
+                        <circle cx="52" cy="71" r="1.2" fill="#FFFFFF"/>
+                        <circle cx="94" cy="71" r="1.2" fill="#FFFFFF"/>
+                        <!-- Cheeks + smile -->
+                        <ellipse cx="40" cy="82" rx="8" ry="5.5" fill="#FB7185" opacity="0.75"/>
+                        <ellipse cx="110" cy="82" rx="8" ry="5.5" fill="#FB7185" opacity="0.75"/>
+                        <path d="M 66 80 Q 75 90 84 80" fill="#FB7185" stroke="#065F46" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <!-- Nostrils -->
+                        <circle cx="70" cy="74" r="1.2" fill="#065F46"/>
+                        <circle cx="80" cy="74" r="1.2" fill="#065F46"/>
+                    </svg>`);
+            };
+            if (dinoImg) {
+                dinoImg.addEventListener('error', dinoFallback);
+                if (dinoImg.complete && dinoImg.naturalWidth === 0) dinoFallback();
+            }
+
+            // 1. Environmental Time Engine
+            const hour = new Date().getHours();
+            if (hour >= 6 && hour < 12) document.body.classList.add('theme-morning');
+            else if (hour >= 12 && hour < 17) document.body.classList.add('theme-day');
+            else if (hour >= 17 && hour < 20) document.body.classList.add('theme-evening');
+            else document.body.classList.add('theme-night');
+
+            // 2. Phase Transition Logic
+            const phase1 = document.getElementById('phase1-wrapper');
+            const phase2 = document.getElementById('phase2-wrapper');
+            const continueBtn = document.getElementById('p1-continue-btn');
+            const passInput = document.getElementById('p2-password-input');
+            let entered = false;
+
+            const enterPhase2 = () => {
+                if (entered) return;
+                entered = true;
+                phase1.inert = true;
+                phase1.classList.add('fade-out');
+
+                setTimeout(() => {
+                    phase1.style.display = 'none';
+                    phase2.classList.remove('hidden');
+                    void phase2.offsetWidth; // force reflow
+                    phase2.classList.add('fade-in');
+                    setTimeout(() => passInput.focus(), 600);
+                }, 600);
+            };
+
+            // Mouse/touch: click anywhere. Keyboard: the real <button> fires click on Enter/Space and bubbles here.
+            phase1.addEventListener('click', enterPhase2);
+            if (continueBtn) continueBtn.focus({ preventScroll: true });
+
+            // 3. Phase 2 Auth Logic
+            const form = document.getElementById('p2-form');
+            const unlockBtn = document.getElementById('p2-unlock-btn');
+            const statusEl = document.getElementById('p2-status');
+            const resetBtn = document.getElementById('p2-reset');
+            const msgBox = document.getElementById('msg-box');
+            const msgCard = msgBox.querySelector('div');
+            const msgClose = document.getElementById('msg-close');
+            const title2 = document.getElementById('p2-title');
+
+            const setStatus = (text, kind) => {
+                statusEl.textContent = text;
+                statusEl.className = 'p2-status' + (kind ? ' is-' + kind : '');
+            };
+
+            const openMsg = () => {
+                phase2.inert = true; // keep keyboard and screen-reader focus inside the dialog
+                msgBox.classList.add('active');
+                msgBox.setAttribute('aria-hidden', 'false');
+                msgCard.style.transform = 'scale(1)';
+                msgClose.focus();
+            };
+
+            const enterPhase3 = () => {
+                window.consisUnlocked = true;
+                const authGate = document.getElementById('auth-gate');
+                const dash = document.getElementById('dashboard-wrapper');
+                if (authGate) {
+                    authGate.classList.add('fade-out');
+                    authGate.style.pointerEvents = 'none';
+                }
+                if (dash) {
+                    dash.style.display = 'block';
+                    void dash.offsetWidth;
+                    dash.classList.add('fade-in');
+                }
+                setTimeout(() => {
+                    if (authGate) authGate.style.display = 'none';
+                    document.body.classList.remove('auth-mode');
+                    if (typeof render === 'function') render();
+                    if (typeof clock === 'function') clock();
+                    if (typeof S !== 'undefined' && !S.welcomed && typeof chips === 'function' && typeof openO === 'function') {
+                        chips();
+                        openO('wel');
+                    }
+                }, 600);
+            };
+
+            const closeMsg = () => {
+                msgBox.classList.remove('active');
+                msgBox.setAttribute('aria-hidden', 'true');
+                msgCard.style.transform = '';
+                enterPhase3();
+            };
+
+            msgClose.addEventListener('click', closeMsg);
+            msgBox.addEventListener('click', (e) => { if (e.target === msgBox) closeMsg(); });
+            document.addEventListener('keydown', (e) => {
+                if (!msgBox.classList.contains('active')) return;
+                if (e.key === 'Escape') { e.preventDefault(); closeMsg(); }
+                else if (e.key === 'Tab') { e.preventDefault(); msgClose.focus(); } // single focusable control: trap
+            });
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const val = passInput.value.trim().toLowerCase();
+
+                // Reset classes
+                passInput.classList.remove('p2-shake-error', 'p2-success-state');
+                void passInput.offsetWidth; // Reflow for animation restart
+
+                if (val === 'focus') {
+                    passInput.classList.add('p2-success-state');
+                    passInput.setAttribute('aria-invalid', 'false');
+                    unlockBtn.textContent = '✓';
+                    unlockBtn.setAttribute('aria-label', 'Unlocked');
+                    unlockBtn.style.backgroundColor = 'rgba(34, 197, 94, 0.3)';
+                    passInput.disabled = true;
+                    unlockBtn.disabled = true;
+                    setStatus('Password accepted. Access granted.', 'ok');
+                    setTimeout(openMsg, 500);
+                } else {
+                    passInput.classList.add('p2-shake-error');
+                    passInput.value = '';
+                    passInput.setAttribute('aria-invalid', 'true');
+                    setStatus('Incorrect password. Try again.', 'error');
+                    passInput.focus();
+                }
+            });
+
+            resetBtn.addEventListener('click', () => {
+                setStatus("Password is: focus", "ok"); passInput.value = "focus"; passInput.focus();
+            });
+        });
+    </script>
+</body>
+</html>

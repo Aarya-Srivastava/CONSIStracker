@@ -1,0 +1,18 @@
+{
+  "name": "consistracker",
+  "version": "1.0.0",
+  "description": "Full Stack Consistracker - React, Tailwind CSS, Express, Persistent Storage",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "node server/server.js",
+    "client": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
+    "postinstall": "npm --prefix server install && npm --prefix client install"
+  },
+  "dependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
