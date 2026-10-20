@@ -22,68 +22,84 @@ const SCENES = [
 
 const DAILY_CHALLENGES = [
   {
-    id: 'deep_sprint_45',
-    title: 'The Unbroken 45m Sprint',
-    desc: 'Log a continuous 45-minute focus session without switching tabs or touching your phone.',
-    reward: '+50 Dopamine XP',
-    tag: 'Focus Master',
-    icon: '⚡'
-  },
-  {
-    id: 'feynman_blitz',
-    title: 'The Feynman Blitz',
-    desc: 'Pick your toughest concept today and write a 3-bullet plain English explanation in your Scrapbook.',
-    reward: '+40 Dopamine XP',
-    tag: 'Retention',
-    icon: '🧠'
-  },
-  {
-    id: 'triple_pomodoro',
-    title: 'The Triple Strike',
-    desc: 'Complete 3 focused 25-minute study sprints with 5-minute movement breaks between each.',
+    id: 'dsa_leetcode_medium',
+    title: 'The LeetCode Medium Gauntlet',
+    desc: 'Solve 1 LeetCode Medium (or 2 Easy) problem. Analyze and write down both Time O(N) and Space O(1) complexity before submitting.',
     reward: '+60 Dopamine XP',
-    tag: 'Endurance',
-    icon: '🎯'
+    tag: 'DSA Sprint',
+    icon: '💻'
   },
   {
-    id: 'two_minute_launch',
-    title: 'Zero Hesitation Launch',
-    desc: 'Sit down and start your timer within 120 seconds. Defeat resistance before it begins.',
-    reward: '+35 Dopamine XP',
-    tag: 'Momentum',
+    id: 'dsa_tree_graph_drill',
+    title: 'Tree & Graph Traversal Drill',
+    desc: 'Write a BFS, DFS, or Binary Tree Level Order traversal from scratch on a blank scratchpad without auto-complete or copying.',
+    reward: '+50 Dopamine XP',
+    tag: 'Core Algorithms',
+    icon: '🌳'
+  },
+  {
+    id: 'internship_ship_pr',
+    title: 'Ship Internship PR / Feature',
+    desc: 'Complete a clean git commit, write documentation/unit tests, or push a working feature/bugfix branch for your internship project.',
+    reward: '+65 Dopamine XP',
+    tag: 'Internship Impact',
     icon: '🚀'
   },
   {
-    id: 'distraction_vault',
-    title: 'Mind Fortress',
-    desc: 'Catch and park at least 2 wandering thoughts into the Distraction Pad without getting derailed.',
+    id: 'dsa_complexity_crusher',
+    title: 'Complexity Crusher (O(N²) ➔ O(N))',
+    desc: 'Take a brute-force approach you previously wrote and optimize it down using a HashMap, Two Pointers, or Sliding Window pattern.',
     reward: '+45 Dopamine XP',
-    tag: 'Discipline',
+    tag: 'DSA Optimization',
+    icon: '⚡'
+  },
+  {
+    id: 'mock_interview_aloud',
+    title: 'Mock Interview Voice Simulation',
+    desc: 'Pick any DSA problem and explain your algorithmic approach out loud as if explaining your trade-offs to a tech interviewer.',
+    reward: '+55 Dopamine XP',
+    tag: 'Interview Skills',
+    icon: '🎙️'
+  },
+  {
+    id: 'internship_edge_cases',
+    title: 'Production Edge-Case Vault',
+    desc: 'Test your internship code against 4 deliberate edge cases: null/empty input, boundary constraints, duplicates, and error handling.',
+    reward: '+40 Dopamine XP',
+    tag: 'Production Quality',
     icon: '🛡️'
   },
   {
-    id: 'speed_problem_run',
-    title: 'Problem-Solving Rush',
-    desc: 'Solve 5 practice problems or review 20 flashcards in one intense, uninterrupted burst.',
-    reward: '+50 Dopamine XP',
-    tag: 'Hard Work',
-    icon: '🔥'
-  },
-  {
-    id: 'early_bird_power',
-    title: 'Golden Hour Push',
-    desc: 'Log at least 60 total minutes of high-priority study before 3:00 PM today.',
+    id: 'system_design_sketch',
+    title: 'System Design Architecture Blueprint',
+    desc: 'Sketch a high-level system diagram for a backend service (Database choice, Caching layer, REST/GraphQL API contracts, Latency).',
     reward: '+55 Dopamine XP',
-    tag: 'Strategy',
-    icon: '🌅'
+    tag: 'System Design',
+    icon: '🏗️'
   },
   {
-    id: 'hydration_flow',
-    title: 'Biohack & Lock In',
-    desc: 'Down 500ml of water, do a 60-second stretch, and hit a 30m uninterrupted flow block.',
-    reward: '+40 Dopamine XP',
-    tag: 'Energy',
-    icon: '💧'
+    id: 'internship_code_refactor',
+    title: 'Senior-Level Code Refactoring',
+    desc: 'Refactor a cluttered 40+ line function in your internship project into clean, modular, self-documenting helper functions.',
+    reward: '+50 Dopamine XP',
+    tag: 'Clean Architecture',
+    icon: '📦'
+  },
+  {
+    id: 'dsa_dp_recursion',
+    title: 'Dynamic Programming Recurrence Attack',
+    desc: 'Draw out the state-transition table / recurrence formula for a DP problem (Memoization or 1D Tabulation) on paper before coding.',
+    reward: '+65 Dopamine XP',
+    tag: 'Advanced DSA',
+    icon: '🎯'
+  },
+  {
+    id: 'deep_flow_sprint',
+    title: 'Zero-Distraction 45m Code Lock-In',
+    desc: 'Complete 45 minutes of deep focused coding on your internship tickets or DSA problems without checking your phone or social media.',
+    reward: '+45 Dopamine XP',
+    tag: 'Flow State',
+    icon: '🔥'
   }
 ];
 
@@ -300,6 +316,79 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
         completedAt: null
       }
     });
+  };
+
+  // Timezone & Environmental Atmospheric Theme Engine
+  const userTimezone = useMemo(() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local';
+    } catch {
+      return 'Local';
+    }
+  }, []);
+
+  const activeTimeTheme = useMemo(() => {
+    const mode = state.timeTheme || 'auto';
+    if (mode !== 'auto') return mode;
+    const hour = now.getHours();
+    if (hour >= 6 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 17) return 'day';
+    if (hour >= 17 && hour < 21) return 'evening';
+    return 'night';
+  }, [state.timeTheme, now]);
+
+  const timeThemeMeta = useMemo(() => {
+    switch (activeTimeTheme) {
+      case 'morning':
+        return {
+          icon: '🌅',
+          label: 'Morning',
+          greeting: '🌅 Morning Dawn — Prime time for LeetCode Mediums & algorithm mastery',
+          pillClass: 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+        };
+      case 'day':
+        return {
+          icon: '☀️',
+          label: 'Daylight',
+          greeting: '☀️ Afternoon Focus — Ship internship PRs, build features & conquer bugs',
+          pillClass: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
+        };
+      case 'evening':
+        return {
+          icon: '🌆',
+          label: 'Dusk',
+          greeting: '🌆 Golden Hour — Optimize complexity, review PRs & lock in daily gains',
+          pillClass: 'bg-pink-500/15 text-pink-400 border-pink-500/30'
+        };
+      case 'night':
+      default:
+        return {
+          icon: '🌙',
+          label: 'Midnight',
+          greeting: '🌙 Late Night Deep Focus — Calm, quiet hours for hard problem-solving',
+          pillClass: 'bg-purple-500/15 text-purple-400 border-purple-500/30'
+        };
+    }
+  }, [activeTimeTheme]);
+
+  const handleCycleTimeTheme = () => {
+    const modes = ['auto', 'morning', 'day', 'evening', 'night'];
+    const current = state.timeTheme || 'auto';
+    const next = modes[(modes.indexOf(current) + 1) % modes.length];
+
+    onUpdateState({
+      ...state,
+      timeTheme: next
+    });
+
+    const labels = {
+      auto: 'Auto (Synced with local timezone)',
+      morning: 'Morning Dawn 🌅',
+      day: 'Afternoon Focus ☀️',
+      evening: 'Golden Dusk 🌆',
+      night: 'Midnight Owl 🌙'
+    };
+    showToast(`Time Theme: ${labels[next]}`);
   };
 
   // Goal calculations
@@ -769,6 +858,20 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
               )}
             </div>
 
+            {/* Time Zone & Ambient Theme Switcher */}
+            <button
+              type="button"
+              onClick={handleCycleTimeTheme}
+              title={`Time Zone Theme: ${timeThemeMeta.label} (${state.timeTheme && state.timeTheme !== 'auto' ? 'Manual override' : 'Auto-synced with ' + userTimezone}). Click to cycle.`}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${timeThemeMeta.pillClass} hover:brightness-110 active:scale-95`}
+            >
+              <span>{timeThemeMeta.icon}</span>
+              <span className="hidden sm:inline">{timeThemeMeta.label}</span>
+              <span className="text-[9px] opacity-75 font-normal">
+                {state.timeTheme && state.timeTheme !== 'auto' ? 'Manual' : 'Auto'}
+              </span>
+            </button>
+
             {/* Theme Toggle */}
             <button
               type="button"
@@ -781,6 +884,22 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
           </div>
         </div>
       </header>
+
+      {/* Atmospheric Timezone & Study Context Banner */}
+      <div className="flex items-center justify-between flex-wrap gap-2 px-4 py-2.5 mb-5 rounded-2xl bg-[var(--surf2)]/50 border border-[var(--line)]/70 text-xs text-[var(--mut)] shadow-xs">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="text-base flex-shrink-0">{timeThemeMeta.icon}</span>
+          <span className="font-medium text-[var(--ink)] truncate">
+            {timeThemeMeta.greeting}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 text-[11px] font-medium opacity-85 ml-auto flex-shrink-0">
+          <span className="px-2 py-0.5 rounded-md bg-[var(--surf)] border border-[var(--line)]">
+            📍 {userTimezone}
+          </span>
+          <span>{now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
+        </div>
+      </div>
 
       {/* Main Hero Focus Timer Section (Expanded Full Width) */}
       <div className="w-full">

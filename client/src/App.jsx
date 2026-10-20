@@ -44,21 +44,28 @@ export default function App() {
     api.saveState(newState);
   };
 
-  // Environmental Time Engine
+  // Environmental Time Engine (Synchronized with local timezone & user preferences)
   useEffect(() => {
-    const hour = new Date().getHours();
-    document.body.classList.remove('theme-morning', 'theme-day', 'theme-evening', 'theme-night');
+    const updateTimeTheme = () => {
+      const mode = appData.timeTheme || 'auto';
+      let target = mode;
 
-    if (hour >= 6 && hour < 12) {
-      document.body.classList.add('theme-morning');
-    } else if (hour >= 12 && hour < 17) {
-      document.body.classList.add('theme-day');
-    } else if (hour >= 17 && hour < 20) {
-      document.body.classList.add('theme-evening');
-    } else {
-      document.body.classList.add('theme-night');
-    }
-  }, []);
+      if (mode === 'auto') {
+        const hour = new Date().getHours();
+        if (hour >= 6 && hour < 12) target = 'morning';
+        else if (hour >= 12 && hour < 17) target = 'day';
+        else if (hour >= 17 && hour < 21) target = 'evening';
+        else target = 'night';
+      }
+
+      document.body.classList.remove('theme-morning', 'theme-day', 'theme-evening', 'theme-night');
+      document.body.classList.add(`theme-${target}`);
+    };
+
+    updateTimeTheme();
+    const interval = setInterval(updateTimeTheme, 30000);
+    return () => clearInterval(interval);
+  }, [appData.timeTheme]);
 
   // Update body lock class depending on phase
   useEffect(() => {

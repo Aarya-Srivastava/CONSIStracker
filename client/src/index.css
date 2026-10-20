@@ -36,11 +36,115 @@
   color-scheme: light;
 }
 
-/* Time-based themes for Phase 1 & 2 */
-body.theme-morning { --bg-top: #1D4E89; --bg-mid: #B8456A; --bg-bot: #E07A3F; --text-main: #FFFFFF; }
-body.theme-day { --bg-top: #4CA1AF; --bg-mid: #2C3E50; --bg-bot: #3498DB; --text-main: #F8FAFC; }
-body.theme-evening { --bg-top: #2B1B54; --bg-mid: #EE4266; --bg-bot: #FFD23F; --text-main: #FFFFFF; }
-body.theme-night { --bg-top: #0B1021; --bg-mid: #17183B; --bg-bot: #3B1C4A; --text-main: #FFFFFF; }
+/* Time-based theme atmospheric palettes (Morning / Day / Evening / Night) */
+body.theme-morning {
+  --bg-top: #1D4E89;
+  --bg-mid: #B8456A;
+  --bg-bot: #E07A3F;
+  --text-main: #FFFFFF;
+  --bg: #11182c;
+  --bg2: #19223e;
+  --surf: #1b2444;
+  --surf2: #243058;
+  --ink: #f0f4ff;
+  --mut: #94a3b8;
+  --line: rgba(148, 163, 240, 0.18);
+  --lamp: #f59e0b;
+  --time-accent: #38bdf8;
+}
+
+body.theme-day {
+  --bg-top: #4CA1AF;
+  --bg-mid: #2C3E50;
+  --bg-bot: #3498DB;
+  --text-main: #F8FAFC;
+  --bg: #0f172a;
+  --bg2: #1e293b;
+  --surf: #1b263b;
+  --surf2: #25334d;
+  --ink: #f8fafc;
+  --mut: #94a3b8;
+  --line: rgba(148, 163, 184, 0.18);
+  --lamp: #38bdf8;
+  --time-accent: #10b981;
+}
+
+body.theme-evening {
+  --bg-top: #2B1B54;
+  --bg-mid: #EE4266;
+  --bg-bot: #FFD23F;
+  --text-main: #FFFFFF;
+  --bg: #18122B;
+  --bg2: #231a3d;
+  --surf: #281d45;
+  --surf2: #34265a;
+  --ink: #f5f0ff;
+  --mut: #ab9fc7;
+  --line: rgba(200, 180, 255, 0.18);
+  --lamp: #f0b25a;
+  --time-accent: #ec4899;
+}
+
+body.theme-night {
+  --bg-top: #0B1021;
+  --bg-mid: #17183B;
+  --bg-bot: #3B1C4A;
+  --text-main: #FFFFFF;
+  --bg: #0c0d19;
+  --bg2: #141728;
+  --surf: #181c30;
+  --surf2: #202640;
+  --ink: #eceaff;
+  --mut: #9290b8;
+  --line: rgba(160, 150, 230, 0.15);
+  --lamp: #eab308;
+  --time-accent: #a855f7;
+}
+
+/* Light Theme overrides with subtle atmospheric time tinting */
+:root[data-theme="light"] body.theme-morning {
+  --bg: #eef2f9;
+  --bg2: #dde5f5;
+  --surf: #ffffff;
+  --surf2: #e9f0fc;
+  --ink: #101c38;
+  --mut: #54668b;
+  --line: rgba(20, 45, 100, 0.12);
+  --lamp: #d97706;
+}
+
+:root[data-theme="light"] body.theme-day {
+  --bg: #f0f4f8;
+  --bg2: #e1e9f0;
+  --surf: #ffffff;
+  --surf2: #e7eff7;
+  --ink: #0f1e2f;
+  --mut: #4f6479;
+  --line: rgba(15, 45, 80, 0.12);
+  --lamp: #0284c7;
+}
+
+:root[data-theme="light"] body.theme-evening {
+  --bg: #faf2eb;
+  --bg2: #f2e1d5;
+  --surf: #ffffff;
+  --surf2: #faece2;
+  --ink: #2f1822;
+  --mut: #7e5669;
+  --line: rgba(70, 20, 50, 0.12);
+  --lamp: #b45309;
+}
+
+:root[data-theme="light"] body.theme-night {
+  --bg: #ececf4;
+  --bg2: #dedee9;
+  --surf: #ffffff;
+  --surf2: #e7e7f2;
+  --ink: #18162d;
+  --mut: #5b567a;
+  --line: rgba(30, 25, 70, 0.12);
+  --lamp: #9333ea;
+}
 
 body {
   margin: 0;
@@ -50,7 +154,11 @@ body {
   font-family: 'Instrument Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   color: var(--ink);
   background-color: var(--bg);
-  transition: background 0.5s ease, color 0.5s ease;
+  background-image:
+    radial-gradient(at 10% 10%, color-mix(in srgb, var(--time-accent, #f0b25a) 12%, transparent) 0px, transparent 45%),
+    radial-gradient(at 90% 90%, color-mix(in srgb, var(--lamp, #f0b25a) 10%, transparent) 0px, transparent 45%);
+  background-attachment: fixed;
+  transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease;
 }
 
 body.auth-locked {
