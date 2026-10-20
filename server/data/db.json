@@ -127,7 +127,13 @@
             "createdAt": "2026-10-20T10:58:16.393Z",
             "history": {}
           }
-        ]
+        ],
+        "dailyChallenge": {
+          "date": "2026-10-20",
+          "challengeId": "speed_problem_run",
+          "completed": false,
+          "completedAt": null
+        }
       }
     },
     "aarya": {
