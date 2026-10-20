@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { playSfx } from '../utils/audio';
 
-export default function EveningRitualModal({ isOpen, isMuted, onClose, onComplete }) {
+export default function EveningRitualModal({ isOpen, isMuted, onClose, onComplete, onLogout }) {
   const [isOut, setIsOut] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
   const [stageClass, setStageClass] = useState(''); // 'in' | 'ex' | ''
@@ -14,6 +14,8 @@ export default function EveningRitualModal({ isOpen, isMuted, onClose, onComplet
   const [isQuoteOn, setIsQuoteOn] = useState(false);
   const [promptText, setPromptText] = useState('Tap anywhere and Diano will blow out the candle');
   const [showSleepWell, setShowSleepWell] = useState(false);
+  const [logoutCountdown, setLogoutCountdown] = useState(null);
+  const timerRef = useRef(null);
 
   // Reset all state when opened
   useEffect(() => {
@@ -30,7 +32,11 @@ export default function EveningRitualModal({ isOpen, isMuted, onClose, onComplet
       setIsQuoteOn(false);
       setPromptText('Tap anywhere and Diano will blow out the candle');
       setShowSleepWell(false);
+      setLogoutCountdown(null);
     }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -68,6 +74,21 @@ export default function EveningRitualModal({ isOpen, isMuted, onClose, onComplet
           setShowSleepWell(true);
 
           if (onComplete) onComplete();
+
+          // 3-second automatic logout countdown after reading quote and blowout text
+          let secondsLeft = 3;
+          setLogoutCountdown(secondsLeft);
+
+          timerRef.current = setInterval(() => {
+            secondsLeft -= 1;
+            if (secondsLeft <= 0) {
+              clearInterval(timerRef.current);
+              if (onLogout) onLogout();
+              else if (onClose) onClose();
+            } else {
+              setLogoutCountdown(secondsLeft);
+            }
+          }, 1000);
         }, 550);
       }, 320);
     }, 450);
@@ -236,14 +257,31 @@ export default function EveningRitualModal({ isOpen, isMuted, onClose, onComplet
       {/* Bottom Action Controls */}
       <div onClick={(e) => e.stopPropagation()} className="pb-4">
         {showSleepWell ? (
-          <button
-            type="button"
-            id="sw"
-            onClick={onClose}
-            className="border border-[var(--lamp)] bg-[var(--lamp)] text-[#1b1730] rounded-full px-8 py-3 font-semibold text-sm hover:brightness-110 transition-all cursor-pointer shadow-lg"
-          >
-            Sleep well
-          </button>
+          <div className="flex flex-col items-center gap-2.5">
+            <button
+              type="button"
+              id="sw"
+              onClick={() => {
+                if (timerRef.current) clearInterval(timerRef.current);
+                if (onLogout) onLogout();
+                else if (onClose) onClose();
+              }}
+              className="border border-[var(--lamp)] bg-[var(--lamp)] text-[#1b1730] rounded-full px-8 py-3 font-semibold text-sm hover:brightness-110 active:scale-95 transition-all cursor-pointer shadow-lg flex items-center gap-2"
+            >
+              <span>Sleep well</span>
+              {logoutCountdown !== null && (
+                <span className="text-xs bg-[#1b1730]/15 px-2 py-0.5 rounded-full font-bold">
+                  {logoutCountdown}s
+                </span>
+              )}
+            </button>
+
+            {logoutCountdown !== null && (
+              <span className="text-xs text-[#c9d3ee]/80 font-medium animate-pulse">
+                🌙 Automatically logging out to rest in {logoutCountdown}s...
+              </span>
+            )}
+          </div>
         ) : (
           <button
             type="button"

@@ -1744,6 +1744,7 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
             });
           }
         }}
+        onLogout={onLogout}
       />
 
       <ManualEntryModal
