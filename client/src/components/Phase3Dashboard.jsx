@@ -227,39 +227,6 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
     return { text: '🎯 Getting Started', color: 'text-[var(--mut)]' };
   }, [monthStats.completionRate]);
 
-  // 4-Week Milestone Trend
-  const weeklyMilestones = useMemo(() => {
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const prefix = todayIso.slice(0, 7);
-
-    const weeks = [
-      { label: 'Week 1', range: '1–7', start: 1, end: 7 },
-      { label: 'Week 2', range: '8–14', start: 8, end: 14 },
-      { label: 'Week 3', range: '15–21', start: 15, end: 21 },
-      { label: 'Week 4', range: `22–${daysInMonth}`, start: 22, end: daysInMonth }
-    ];
-
-    return weeks.map((w) => {
-      let completedInWeek = 0;
-      let totalPossible = habits.length * (w.end - w.start + 1);
-
-      for (let d = w.start; d <= w.end; d++) {
-        const dKey = `${prefix}-${String(d).padStart(2, '0')}`;
-        habits.forEach((h) => {
-          if (h.history && h.history[dKey]) completedInWeek++;
-        });
-      }
-
-      const rate = totalPossible > 0 ? Math.min(100, Math.round((completedInWeek / totalPossible) * 100)) : 0;
-      const isCurrentWeek = now.getDate() >= w.start && now.getDate() <= w.end;
-      const isPastWeek = now.getDate() > w.end;
-
-      return { ...w, completedInWeek, totalPossible, rate, isCurrentWeek, isPastWeek };
-    });
-  }, [habits, todayIso, now]);
-
   // Daily Dopamine Quest logic
   const defaultTodayChallenge = useMemo(() => {
     let hash = 0;
@@ -1498,57 +1465,6 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout }) {
                         ? 'All completed today! 🌟'
                         : 'Tap habit below to check'}
                     </span>
-                  </div>
-                </div>
-
-                {/* 4-Week Milestone Sparklines */}
-                <div className="p-3.5 rounded-2xl bg-[var(--surf2)]/70 border border-[var(--line)]">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--mut)]">
-                      4-Week Milestone Sparklines
-                    </span>
-                    <span className="text-[10px] text-[var(--mut)]">
-                      Week-over-week consistency
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {weeklyMilestones.map((wm) => (
-                      <div
-                        key={wm.label}
-                        className={`p-2 rounded-xl border transition-all ${
-                          wm.isCurrentWeek
-                            ? 'bg-[var(--surf)] border-[var(--lamp)]/50 shadow-xs'
-                            : 'bg-[var(--surf)]/50 border-[var(--line)]'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span className={`font-semibold ${wm.isCurrentWeek ? 'text-[var(--lamp)]' : 'text-[var(--ink)]'}`}>
-                            {wm.label} <span className="text-[9px] text-[var(--mut)] font-normal">({wm.range})</span>
-                          </span>
-                          <span
-                            className="font-bold text-[10px]"
-                            style={{
-                              color: wm.rate >= 75 ? '#10b981' : wm.rate >= 40 ? 'var(--lamp)' : 'var(--mut)'
-                            }}
-                          >
-                            {wm.rate}%
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full bg-[var(--line)]/60 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-500 ${
-                              wm.isCurrentWeek
-                                ? 'bg-gradient-to-r from-[var(--lamp)] to-emerald-400'
-                                : 'bg-emerald-500/80'
-                            }`}
-                            style={{ width: `${Math.max(wm.rate > 0 ? 8 : 0, wm.rate)}%` }}
-                          />
-                        </div>
-                        <span className="text-[9px] text-[var(--mut)] block mt-1">
-                          {wm.completedInWeek} check-ins
-                        </span>
-                      </div>
-                    ))}
                   </div>
                 </div>
 
