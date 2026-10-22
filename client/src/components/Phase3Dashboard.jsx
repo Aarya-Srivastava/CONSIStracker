@@ -21,10 +21,57 @@ const SCENES = [
   { name: 'Autumn ridge', key: 'peak', palette: ['#5a2d3d', '#d9733f', '#f2b35c', '#ffe3a6', '#a65a3a', '#7d3f32', '#4f2a2a', '#33201f'] }
 ];
 
+const NAV_SECTIONS = [
+  { id: 'sec-timer', label: 'Focus Timer & Milestones', icon: '⏱️' },
+  { id: 'sec-charts', label: 'Study Journey Chart', icon: '📊' },
+  { id: 'sec-calendar', label: '31-Day Consistency Matrix', icon: '📅' },
+  { id: 'sec-habits', label: 'Habit Tracker & Goals', icon: '🎯' },
+  { id: 'sec-mist', label: 'The Monthly Mist', icon: '🌄' },
+  { id: 'sec-backup', label: 'Backup & Care', icon: '💾' }
+];
 
 export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpenTutorial }) {
   const [now, setNow] = useState(new Date());
   const currentUser = getCurrentUser();
+
+  const [activeNavSection, setActiveNavSection] = useState('sec-timer');
+  const [highlightedSection, setHighlightedSection] = useState(null);
+  const blinkTimeoutRef = useRef(null);
+
+  // ScrollSpy listener to sync active section in side rail
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollPos = window.scrollY + window.innerHeight * 0.35;
+      for (let i = NAV_SECTIONS.length - 1; i >= 0; i--) {
+        const el = document.getElementById(NAV_SECTIONS[i].id);
+        if (el) {
+          const top = el.offsetTop;
+          if (scrollPos >= top) {
+            setActiveNavSection(NAV_SECTIONS[i].id);
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleNavClick = (secId) => {
+    playSfx('check', state.mute);
+    const target = document.getElementById(secId);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedSection(secId);
+      setActiveNavSection(secId);
+      if (blinkTimeoutRef.current) clearTimeout(blinkTimeoutRef.current);
+      blinkTimeoutRef.current = setTimeout(() => {
+        setHighlightedSection(null);
+      }, 1400);
+    }
+  };
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 10000);
@@ -637,6 +684,45 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
 
   return (
     <div className="w-full max-w-[1040px] mx-auto px-4 sm:px-6 py-6 pb-20 text-[var(--ink)]">
+      {/* Floating Left Side Navigation (ScrollSpy + Feature Blink) */}
+      <nav
+        aria-label="Dashboard Feature Navigation"
+        className={`fixed left-2 sm:left-4 xl:left-6 top-1/2 -translate-y-1/2 z-40 hidden md:flex flex-col items-center gap-2 p-1.5 rounded-2xl bg-[var(--surf)]/85 border border-[var(--line)] shadow-xl backdrop-blur-md transition-all duration-300 ${
+          timerRunning ? 'opacity-35 hover:opacity-100' : 'opacity-100'
+        }`}
+      >
+        <span className="text-[9px] font-bold uppercase tracking-widest text-[var(--mut)] my-0.5 scale-90">
+          NAV
+        </span>
+        {NAV_SECTIONS.map((sec) => {
+          const isActive = activeNavSection === sec.id;
+          const isBlinking = highlightedSection === sec.id;
+          return (
+            <div key={sec.id} className="relative group">
+              <button
+                type="button"
+                onClick={() => handleNavClick(sec.id)}
+                aria-label={`Jump to ${sec.label}`}
+                className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? 'bg-[var(--lamp)] text-[#1b1730] font-bold shadow-md shadow-[var(--lamp)]/30 scale-105'
+                    : 'text-[var(--mut)] hover:text-[var(--ink)] hover:bg-[var(--surf2)]'
+                } ${isBlinking ? 'ring-2 ring-[var(--lamp)] animate-ping' : ''}`}
+              >
+                <span>{sec.icon}</span>
+              </button>
+
+              {/* Tooltip on right of icon */}
+              <div className="absolute left-full ml-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                <div className="px-2.5 py-1 rounded-lg bg-[var(--ink)] text-[var(--bg)] text-xs font-semibold whitespace-nowrap shadow-xl flex items-center gap-1.5">
+                  <span>{sec.label}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </nav>
+
       {/* Toast Alert */}
       {toastMsg && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-full bg-[var(--ink)] text-[var(--bg)] font-medium text-sm shadow-2xl transition-all animate-bounce">
@@ -835,7 +921,14 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
 
       {/* Main Hero Focus Timer Section (Expanded Full Width) */}
       <div className="w-full">
-        <section className="relative rounded-[32px] border border-[var(--line)] bg-[var(--surf)] p-6 sm:p-10 flex flex-col items-center text-center overflow-hidden bg-[radial-gradient(85%_75%_at_50%_35%,rgba(240,178,90,0.18),transparent_75%)] shadow-xl">
+        <section
+          id="sec-timer"
+          className={`relative rounded-[32px] border bg-[var(--surf)] p-6 sm:p-10 flex flex-col items-center text-center overflow-hidden bg-[radial-gradient(85%_75%_at_50%_35%,rgba(240,178,90,0.18),transparent_75%)] shadow-xl transition-all duration-500 ${
+            highlightedSection === 'sec-timer'
+              ? 'border-[var(--lamp)] ring-4 ring-[var(--lamp)]/60 shadow-2xl shadow-[var(--lamp)]/30 scale-[1.01] animate-pulse'
+              : 'border-[var(--line)]'
+          }`}
+        >
           {/* Diano Mascot */}
           <div className="relative mb-2">
             <svg
@@ -1128,7 +1221,14 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
       {/* Study Journey & This Month */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-6">
         {/* Weekly Chart with Subject Breakdown Toggle */}
-        <section className="rounded-[26px] border border-[var(--line)] bg-[var(--surf)] p-6">
+        <section
+          id="sec-charts"
+          className={`rounded-[26px] border bg-[var(--surf)] p-6 transition-all duration-500 ${
+            highlightedSection === 'sec-charts'
+              ? 'border-[var(--lamp)] ring-4 ring-[var(--lamp)]/60 shadow-2xl shadow-[var(--lamp)]/30 scale-[1.01] animate-pulse'
+              : 'border-[var(--line)]'
+          }`}
+        >
           <div className="flex justify-between items-center mb-1 flex-wrap gap-2">
             <div>
               <h2 className="serif text-xl font-normal">Your study journey</h2>
@@ -1308,7 +1408,14 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
         </section>
 
         {/* This Month Calendar */}
-        <section className="rounded-[26px] border border-[var(--line)] bg-[var(--surf)] p-6">
+        <section
+          id="sec-calendar"
+          className={`rounded-[26px] border bg-[var(--surf)] p-6 transition-all duration-500 ${
+            highlightedSection === 'sec-calendar'
+              ? 'border-[var(--lamp)] ring-4 ring-[var(--lamp)]/60 shadow-2xl shadow-[var(--lamp)]/30 scale-[1.01] animate-pulse'
+              : 'border-[var(--line)]'
+          }`}
+        >
           <h2 className="serif text-xl font-normal mb-1">
             {now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </h2>
@@ -1360,8 +1467,13 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
 
       {/* Habit Tracker & Monthly Goals Overview (Interactive Summary Card) */}
       <section
+        id="sec-habits"
         onClick={() => setShowHabitModal(true)}
-        className="group relative rounded-[28px] border border-[var(--line)] bg-[var(--surf)] p-5 sm:p-7 mt-6 cursor-pointer hover:border-[var(--lamp)] hover:shadow-lg transition-all duration-300"
+        className={`group relative rounded-[28px] border bg-[var(--surf)] p-5 sm:p-7 mt-6 cursor-pointer hover:border-[var(--lamp)] hover:shadow-lg transition-all duration-500 ${
+          highlightedSection === 'sec-habits'
+            ? 'border-[var(--lamp)] ring-4 ring-[var(--lamp)]/60 shadow-2xl shadow-[var(--lamp)]/30 scale-[1.01] animate-pulse'
+            : 'border-[var(--line)]'
+        }`}
       >
         {habits.length === 0 ? (
           <div className="py-8 text-center">
@@ -1596,7 +1708,14 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
       </div>
 
       {/* The Monthly Mist */}
-      <section className="rounded-[26px] border border-[var(--line)] bg-[var(--surf)] p-6 mt-6">
+      <section
+        id="sec-mist"
+        className={`rounded-[26px] border bg-[var(--surf)] p-6 mt-6 transition-all duration-500 ${
+          highlightedSection === 'sec-mist'
+            ? 'border-[var(--lamp)] ring-4 ring-[var(--lamp)]/60 shadow-2xl shadow-[var(--lamp)]/30 scale-[1.01] animate-pulse'
+            : 'border-[var(--line)]'
+        }`}
+      >
         <h2 className="serif text-xl font-normal mb-1">The monthly mist</h2>
         <p className="text-xs text-[var(--mut)] mb-4">
           Every day you study at least 5 minutes lifts a little more fog.
@@ -1688,7 +1807,14 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
       </section>
 
       {/* Backup and Care Settings */}
-      <section className="rounded-[26px] border border-[var(--line)] bg-[var(--surf)] p-6 mt-6">
+      <section
+        id="sec-backup"
+        className={`rounded-[26px] border bg-[var(--surf)] p-6 mt-6 transition-all duration-500 ${
+          highlightedSection === 'sec-backup'
+            ? 'border-[var(--lamp)] ring-4 ring-[var(--lamp)]/60 shadow-2xl shadow-[var(--lamp)]/30 scale-[1.01] animate-pulse'
+            : 'border-[var(--line)]'
+        }`}
+      >
         <h2 className="serif text-xl font-normal mb-1">Back up your history</h2>
         <p className="text-xs text-[var(--mut)] mb-4">
           Data for <b className="text-[var(--ink)]">{currentUser.username}</b> is saved on the server database. You can also export portable JSON snapshots.
