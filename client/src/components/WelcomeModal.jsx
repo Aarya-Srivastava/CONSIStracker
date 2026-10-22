@@ -113,6 +113,18 @@ const TUTORIAL_SLIDES = [
       'Evening candle blowout with calming rest quote',
       'Automatic 3-second bedtime logout'
     ]
+  },
+  {
+    step: 5,
+    title: 'AI Study Architect & Active Recall',
+    icon: '🤖',
+    highlight: 'Syllabus Pacer & Cognitive Load Balancing',
+    desc: 'Enter any subject, target days, and daily hours. The AI breaks down your curriculum, balances cognitive load, and generates 3 daily active recall questions with hints and full solutions.',
+    bulletPoints: [
+      'Daily time-budgeted study blueprint with task checklist',
+      'Optional syllabus/notes parsing for tailored tracking',
+      'Active recall questions with hints and explanations'
+    ]
   }
 ];
 

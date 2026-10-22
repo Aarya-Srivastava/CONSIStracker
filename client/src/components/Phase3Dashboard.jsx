@@ -9,6 +9,7 @@ import HabitTrackerModal from './HabitTrackerModal';
 import CustomSubjectModal from './CustomSubjectModal';
 import FeedbackModal from './FeedbackModal';
 import ShareReportModal from './ShareReportModal';
+import AIStudyModal from './AIStudyModal';
 import { playSfx, setVolumeLevel } from '../utils/audio';
 import { triggerConfetti } from '../utils/confetti';
 import { getCurrentUser } from '../utils/api';
@@ -23,6 +24,7 @@ const SCENES = [
 ];
 
 const NAV_SECTIONS = [
+  { id: 'sec-study-plan', label: 'AI Study Blueprint', icon: '🤖' },
   { id: 'sec-timer', label: 'Focus Timer & Milestones', icon: '⏱️' },
   { id: 'sec-charts', label: 'Study Journey Chart', icon: '📊' },
   { id: 'sec-calendar', label: '31-Day Consistency Matrix', icon: '📅' },
@@ -61,6 +63,10 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
   }, []);
 
   const handleNavClick = (secId) => {
+    if (secId === 'sec-study-plan' && !state.activeStudyPlan) {
+      setShowAIStudyModal(true);
+      return;
+    }
     playSfx('check', state.mute);
     const target = document.getElementById(secId);
     if (target) {
@@ -98,6 +104,7 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
   const habits = state.habits || [];
   const [showHabitModal, setShowHabitModal] = useState(false);
   const [showCustomSubjectModal, setShowCustomSubjectModal] = useState(false);
+  const [showAIStudyModal, setShowAIStudyModal] = useState(false);
 
   // Sound Volume control state
   const [volume, setVolume] = useState(state.volume != null ? state.volume : 80);
@@ -427,6 +434,45 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
     timerRef.current.last = performance.now();
     setTimerRunning(true);
     setShowTimerModal(true);
+  };
+
+  const handleTogglePlanTask = (dayIdx, taskId) => {
+    if (!state.activeStudyPlan) return;
+    playSfx('check', state.mute);
+
+    const updatedDays = state.activeStudyPlan.days.map((day, dIdx) => {
+      if (dIdx !== dayIdx) return day;
+      const updatedTasks = day.tasks.map((t) =>
+        t.id === taskId ? { ...t, completed: !t.completed } : t
+      );
+      const allTasksDone = updatedTasks.every((t) => t.completed);
+      return {
+        ...day,
+        completed: allTasksDone,
+        tasks: updatedTasks
+      };
+    });
+
+    onUpdateState({
+      ...state,
+      activeStudyPlan: {
+        ...state.activeStudyPlan,
+        days: updatedDays
+      }
+    });
+  };
+
+  const handleStartStudySession = ({ subjectName, allottedMinutes }) => {
+    let matchedTag = tags.find((t) => t.name.toLowerCase() === (subjectName || '').toLowerCase());
+    if (matchedTag) {
+      setSelectedTag(matchedTag);
+    } else {
+      const newTag = { id: 'tag_ai_' + Date.now(), name: subjectName || 'Study', color: '#8b5cf6', icon: '🤖' };
+      const updatedTags = [...tags, newTag];
+      onUpdateState({ ...state, tags: updatedTags });
+      setSelectedTag(newTag);
+    }
+    startTimer();
   };
 
   const endTimer = (verifiedSeconds) => {
@@ -917,6 +963,22 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
               <span className="text-[10px] text-[var(--mut)]">↳</span>
             </button>
 
+            {/* AI Study Architect Pill */}
+            <button
+              type="button"
+              onClick={() => setShowAIStudyModal(true)}
+              title="Open AI Study Architect & Active Recall Blueprint"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/15 hover:border-purple-400 text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all border border-purple-500/30 hover:scale-105 active:scale-95 shadow-xs"
+            >
+              <span>🤖</span>
+              <span className="hidden sm:inline">AI Study</span>
+              {state.activeStudyPlan && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-500/25 text-purple-300 font-bold">
+                  Day {state.activeStudyPlan.currentDayNumber || 1}/{state.activeStudyPlan.totalDays || state.activeStudyPlan.targetDays}
+                </span>
+              )}
+            </button>
+
             {/* Habits Quick Pill */}
             <button
               type="button"
@@ -994,6 +1056,109 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
           <span>{now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span>
         </div>
       </div>
+
+      {/* Active AI Study Mission Strip (Zero-clutter, sleek interactive banner) */}
+      {state.activeStudyPlan && (() => {
+        const plan = state.activeStudyPlan;
+        const currentDayIndex = Math.max(0, (plan.currentDayNumber || 1) - 1);
+        const currentDay = plan.days?.[currentDayIndex] || plan.days?.[0];
+        const dayTasksDone = currentDay?.tasks?.filter((t) => t.completed).length || 0;
+        const totalDayTasks = currentDay?.tasks?.length || 0;
+
+        return (
+          <div
+            id="sec-study-plan"
+            className={`mb-5 rounded-2xl border p-4 sm:p-5 bg-gradient-to-r from-purple-950/40 via-[var(--surf)] to-indigo-950/40 border-purple-500/30 shadow-lg backdrop-blur-md transition-all duration-300 ${
+              highlightedSection === 'sec-study-plan'
+                ? 'ring-4 ring-purple-500/50 scale-[1.01]'
+                : ''
+            }`}
+          >
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[var(--line)]/60">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-xl shadow-xs flex-shrink-0">
+                  🤖
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                      AI Study Copilot • Day {currentDay?.dayNumber || 1} of {plan.totalDays || plan.targetDays}
+                    </span>
+                    <span className="text-xs font-semibold text-[var(--ink)]">
+                      {plan.subject}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium text-[var(--ink)] mt-0.5 line-clamp-1">
+                    🎯 {currentDay?.theme}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+                <div className="text-right hidden md:block mr-2">
+                  <div className="text-xs font-semibold text-[var(--ink)]">
+                    {dayTasksDone}/{totalDayTasks} Tasks Done
+                  </div>
+                  <div className="text-[10px] text-[var(--mut)]">
+                    Target: {plan.hoursPerDay}h/day
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAIStudyModal(true)}
+                  className="px-3.5 py-1.5 rounded-xl bg-[var(--surf2)] hover:bg-[var(--line)] border border-[var(--line)] text-xs font-semibold text-[var(--ink)] transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>📋</span>
+                  <span>View Blueprint</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    handleStartStudySession({
+                      subjectName: plan.subject,
+                      allottedMinutes: currentDay?.allottedMinutes || 120
+                    })
+                  }
+                  className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white text-xs font-bold shadow-md shadow-purple-500/25 transition-all cursor-pointer flex items-center gap-1.5 hover:scale-105 active:scale-95"
+                >
+                  <span>⏱️</span>
+                  <span>Focus on Today's Goal</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Compact Checklist of Today's Tasks */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 mt-3">
+              {currentDay?.tasks?.map((task) => (
+                <div
+                  key={task.id}
+                  onClick={() => handleTogglePlanTask(currentDayIndex, task.id)}
+                  className={`flex items-start gap-2.5 p-2.5 rounded-xl border text-xs cursor-pointer transition-all select-none ${
+                    task.completed
+                      ? 'bg-purple-950/20 border-purple-500/40 text-[var(--mut)] line-through'
+                      : 'bg-[var(--surf2)]/60 hover:bg-[var(--surf2)] border-[var(--line)] text-[var(--ink)]'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={task.completed}
+                    readOnly
+                    className="mt-0.5 rounded text-purple-600 accent-purple-500 cursor-pointer pointer-events-none"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="block leading-snug truncate">{task.title}</span>
+                    <span className="text-[10px] text-purple-400 font-medium">
+                      ⏱️ {task.durationMin} min
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Main Hero Focus Timer Section (Expanded Full Width) */}
       <div className="w-full">
@@ -2080,6 +2245,16 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
         habits={habits}
         todayIso={todayIso}
         claimedMilestones={claimedMilestones}
+        showToast={showToast}
+      />
+
+      {/* AI Study Architect Modal */}
+      <AIStudyModal
+        isOpen={showAIStudyModal}
+        onClose={() => setShowAIStudyModal(false)}
+        activePlan={state.activeStudyPlan}
+        onSavePlan={(plan) => onUpdateState({ ...state, activeStudyPlan: plan })}
+        onStartFocusSession={handleStartStudySession}
         showToast={showToast}
       />
     </div>
