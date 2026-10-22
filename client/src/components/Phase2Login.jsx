@@ -1,9 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../utils/api';
-import { DOMAINS } from './WelcomeModal';
 
 export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
-  const [selectedDomain, setSelectedDomain] = useState('swe_dsa');
   const [username, setUsername] = useState(() => {
     try {
       return localStorage.getItem('consis_last_username') || 'default';
@@ -137,7 +135,7 @@ export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
 
   const handleContinueToDashboard = () => {
     setShowModal(false);
-    onUnlockSuccess(selectedDomain);
+    onUnlockSuccess();
   };
 
   const handleResetPasswordSubmit = async (e) => {
@@ -316,94 +314,6 @@ export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
 
           {/* Form with BOTH Username and Password inputs */}
           <form id="p2-form" onSubmit={handleSubmit} noValidate autoComplete="off" className="px-0 sm:px-4 md:px-6">
-            {/* PRE-SIGN-IN FOCUS DOMAIN PICKER (Redesigned & Elevated) */}
-            <div className="mb-6 p-3 sm:p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-md shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)]">
-              <div className="flex items-center justify-between mb-3 px-0.5">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded-md bg-white/10 flex items-center justify-center text-xs shadow-inner">
-                    🎯
-                  </div>
-                  <span className="text-xs font-semibold tracking-wide text-white/90">
-                    Focus Track
-                  </span>
-                  <span className="hidden sm:inline-block text-[11px] text-white/40 font-normal">
-                    · Personalizes your daily quests
-                  </span>
-                </div>
-                {/* Active track mini pill */}
-                <div
-                  className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border transition-all duration-300"
-                  style={{
-                    backgroundColor: `${(DOMAINS.find(d => d.id === selectedDomain) || DOMAINS[0]).color}20`,
-                    borderColor: `${(DOMAINS.find(d => d.id === selectedDomain) || DOMAINS[0]).color}60`,
-                    color: '#ffffff'
-                  }}
-                >
-                  <span
-                    className="w-1.5 h-1.5 rounded-full animate-pulse"
-                    style={{ backgroundColor: (DOMAINS.find(d => d.id === selectedDomain) || DOMAINS[0]).color }}
-                  />
-                  <span>{(DOMAINS.find(d => d.id === selectedDomain) || DOMAINS[0]).shortName}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-2.5">
-                {DOMAINS.map((dom) => {
-                  const isSel = selectedDomain === dom.id;
-                  return (
-                    <button
-                      key={dom.id}
-                      type="button"
-                      onClick={() => setSelectedDomain(dom.id)}
-                      style={
-                        isSel
-                          ? {
-                              borderColor: `${dom.color}90`,
-                              backgroundColor: `${dom.color}18`,
-                              boxShadow: `0 0 20px -3px ${dom.color}40, inset 0 1px 0 rgba(255,255,255,0.18)`
-                            }
-                          : {}
-                      }
-                      className={`group relative p-2.5 sm:p-3 rounded-xl border text-left cursor-pointer transition-all duration-200 flex items-center gap-2.5 ${
-                        isSel
-                          ? 'scale-[1.02] text-white'
-                          : 'border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] hover:border-white/20 text-white/75 hover:text-white hover:scale-[1.01]'
-                      }`}
-                    >
-                      {/* Icon container */}
-                      <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-base transition-all duration-200 group-hover:scale-110"
-                        style={{
-                          backgroundColor: isSel ? `${dom.color}30` : 'rgba(255, 255, 255, 0.05)',
-                          border: isSel ? `1px solid ${dom.color}60` : '1px solid rgba(255, 255, 255, 0.08)'
-                        }}
-                      >
-                        <span>{dom.icon}</span>
-                      </div>
-
-                      {/* Text info */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-1">
-                          <span className={`text-xs font-semibold truncate ${isSel ? 'text-white' : 'text-white/90'}`}>
-                            {dom.shortName}
-                          </span>
-                          {isSel && (
-                            <span
-                              className="w-1.5 h-1.5 rounded-full shrink-0 shadow-sm"
-                              style={{ backgroundColor: dom.color, boxShadow: `0 0 6px ${dom.color}` }}
-                            />
-                          )}
-                        </div>
-                        <div className="text-[10px] text-white/45 truncate mt-0.5 font-light">
-                          {dom.tagline || dom.badge || 'Domain'}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
             {/* 1. USERNAME INPUT BOX */}
             <div className="mb-4">
               <div className="flex items-center justify-between mb-1.5 px-1">

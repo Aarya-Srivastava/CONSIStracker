@@ -31,7 +31,8 @@
         ],
         "scrap": [],
         "closed": [
-          "2026-10-20"
+          "2026-10-20",
+          "2026-10-22"
         ],
         "scene": {},
         "photo": {},
@@ -129,11 +130,14 @@
           }
         ],
         "dailyChallenge": {
-          "date": "2026-10-20",
-          "challengeId": "speed_problem_run",
-          "completed": false,
-          "completedAt": null
-        }
+          "date": "2026-10-22",
+          "challengeId": "aiml_eda_pipeline",
+          "completed": true,
+          "completedAt": "2026-10-22T11:32:53.649Z"
+        },
+        "userDomain": "swe_dsa",
+        "dopamineXp": 100,
+        "volume": 100
       }
     },
     "aarya": {
@@ -164,6 +168,73 @@
         "lastBackup": "",
         "habits": []
       }
+    },
+    "admin": {
+      "id": "u_admin",
+      "username": "admin",
+      "passwordHash": "$2b$10$Sz/lqpI9ff94CSAZWfw/8OnVg7.BveAjvysnoBopIIlkgQqh246uC",
+      "createdAt": "2026-10-20T18:18:40.164Z",
+      "state": {
+        "goal": 2,
+        "dayGoals": {},
+        "dayNotes": {},
+        "sessions": [],
+        "tags": [
+          {
+            "id": "general",
+            "name": "General",
+            "color": "#94a3b8"
+          },
+          {
+            "id": "coding",
+            "name": "Coding",
+            "color": "#06b6d4"
+          },
+          {
+            "id": "math",
+            "name": "Math",
+            "color": "#a855f7"
+          },
+          {
+            "id": "reading",
+            "name": "Reading",
+            "color": "#10b981"
+          },
+          {
+            "id": "design",
+            "name": "Design",
+            "color": "#f59e0b"
+          },
+          {
+            "id": "writing",
+            "name": "Writing",
+            "color": "#f43f5e"
+          }
+        ],
+        "habits": [],
+        "scrap": [],
+        "closed": [],
+        "scene": {},
+        "photo": {},
+        "mute": false,
+        "welcomed": false,
+        "dopamineXp": 0,
+        "dailyChallenge": null,
+        "rem": {
+          "on": false,
+          "t": "21:30"
+        },
+        "remDay": "",
+        "snooze": 0,
+        "lastBackup": "",
+        "userDomain": "web_dev"
+      }
     }
+  },
+  "feedbacks": [],
+  "stats": {
+    "totalVisits": 38,
+    "todayVisits": 34,
+    "lastVisitDate": "2026-10-22"
   }
 }
