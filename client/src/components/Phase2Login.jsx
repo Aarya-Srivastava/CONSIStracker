@@ -2,13 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../utils/api';
 
 export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
-  const [username, setUsername] = useState(() => {
-    try {
-      return localStorage.getItem('consis_last_username') || '';
-    } catch (e) {
-      return '';
-    }
-  });
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [usernameCheck, setUsernameCheck] = useState(null); // null | 'checking' | 'exists' | 'available'
@@ -31,9 +25,13 @@ export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
   const continueBtnRef = useRef(null);
 
   useEffect(() => {
-    if (passwordInputRef.current) {
-      setTimeout(() => passwordInputRef.current?.focus(), 300);
-    }
+    try {
+      localStorage.removeItem('consis_last_username');
+    } catch (e) {}
+
+    setTimeout(() => {
+      usernameInputRef.current?.focus();
+    }, 300);
   }, []);
 
   // Real-time check if username exists in Register Mode
@@ -350,6 +348,7 @@ export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={isSuccess || isLoading}
                 placeholder="Enter username"
+                autoComplete="off"
                 className={`w-full px-5 py-3.5 rounded-xl font-medium text-base text-white bg-black/40 border outline-none transition-all focus:bg-black/60 ${
                   isRegisterMode && usernameCheck === 'exists'
                     ? 'border-rose-400 focus:border-rose-300'
