@@ -182,7 +182,8 @@
         },
         "userDomain": "swe_dsa",
         "dopamineXp": 100,
-        "volume": 100
+        "volume": 100,
+        "activeStudyPlan": null
       }
     },
     "aarya": {
@@ -278,8 +279,8 @@
   },
   "feedbacks": [],
   "stats": {
-    "totalVisits": 69,
-    "todayVisits": 65,
+    "totalVisits": 72,
+    "todayVisits": 68,
     "lastVisitDate": "2026-10-22"
   }
 }
