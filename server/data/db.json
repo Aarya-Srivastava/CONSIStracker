@@ -36,6 +36,33 @@
             "tag": "Focus",
             "color": "#94a3b8",
             "note": "Focus session"
+          },
+          {
+            "id": "t1792673446414",
+            "date": "2026-10-22",
+            "sec": 3,
+            "type": "timed",
+            "tag": "Focus",
+            "color": "#94a3b8",
+            "note": "Focus session"
+          },
+          {
+            "id": "t1792673456439",
+            "date": "2026-10-22",
+            "sec": 6,
+            "type": "timed",
+            "tag": "Focus",
+            "color": "#94a3b8",
+            "note": "Focus session"
+          },
+          {
+            "id": "t1792673466752",
+            "date": "2026-10-22",
+            "sec": 2,
+            "type": "timed",
+            "tag": "Focus",
+            "color": "#94a3b8",
+            "note": "Focus session"
           }
         ],
         "scrap": [],
@@ -242,8 +269,8 @@
   },
   "feedbacks": [],
   "stats": {
-    "totalVisits": 50,
-    "todayVisits": 46,
+    "totalVisits": 51,
+    "todayVisits": 47,
     "lastVisitDate": "2026-10-22"
   }
 }

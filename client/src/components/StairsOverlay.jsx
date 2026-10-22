@@ -279,15 +279,15 @@ export default function StairsOverlay({
 
       {/* Action Buttons */}
       <div className="pb-3 flex flex-col sm:flex-row items-center gap-3 w-full max-w-md justify-center">
-        {/* If session was short, provide a prominent "Push Harder & Resume" button */}
-        {review.allowResume && onResume && (
+        {/* Resume button (Push Harder for short sessions, or Continue Session for longer blocks) */}
+        {onResume && (
           <button
             type="button"
             onClick={onResume}
             className="w-full sm:w-auto px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm bg-gradient-to-r from-amber-500 to-orange-500 text-black hover:brightness-110 shadow-lg shadow-orange-500/25 transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             <span>🔥</span>
-            <span>Push Harder · Jump Back In</span>
+            <span>{review.allowResume ? 'Push Harder · Jump Back In' : 'Continue Session · Keep Stacking'}</span>
           </button>
         )}
 

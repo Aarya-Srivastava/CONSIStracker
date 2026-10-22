@@ -143,6 +143,7 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
   const [showStrictWarning, setShowStrictWarning] = useState(false);
   const [showStairsModal, setShowStairsModal] = useState(false);
   const [lastSessionSec, setLastSessionSec] = useState(0);
+  const lastCreatedSessionIdRef = useRef(null);
 
   // Distraction Parking Lot for active session
   const [sessionDistractions, setSessionDistractions] = useState([]);
@@ -430,6 +431,7 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
         color: tagColor,
         note: selectedTag ? `${selectedTag.name} focus session` : 'Focus session'
       };
+      lastCreatedSessionIdRef.current = newSession.id;
       onUpdateState({
         ...state,
         sessions: [...(state.sessions || []), newSession]
@@ -444,6 +446,31 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
     }
 
     setShowStairsModal(true);
+  };
+
+  // Resume Timer from exactly where the user left off (Push Harder flow)
+  const handleResumeTimer = () => {
+    setShowStairsModal(false);
+
+    // Roll back the session that was prematurely logged so it won't be double-counted
+    if (lastCreatedSessionIdRef.current) {
+      const sessionIdToRemove = lastCreatedSessionIdRef.current;
+      const filtered = (state.sessions || []).filter((sess) => sess.id !== sessionIdToRemove);
+      onUpdateState({
+        ...state,
+        sessions: filtered
+      });
+      lastCreatedSessionIdRef.current = null;
+    }
+
+    const resumeSeconds = lastSessionSec || 0;
+    setTimerSec(resumeSeconds);
+    setTimerPaused(false);
+    timerRef.current.last = performance.now();
+    setTimerRunning(true);
+    setShowTimerModal(true);
+    playSfx('start', state.mute);
+    showToast(`🔥 Resumed where you left off (${fmtMinSec(resumeSeconds)})! Keep pushing!`);
   };
 
   // Quick Habit Check-in for Today with Micro-Interaction
@@ -1853,11 +1880,11 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
         isOpen={showStairsModal}
         seconds={lastSessionSec}
         distractions={sessionDistractions}
-        onClose={() => setShowStairsModal(false)}
-        onResume={() => {
+        onClose={() => {
           setShowStairsModal(false);
-          startTimer();
+          lastCreatedSessionIdRef.current = null;
         }}
+        onResume={handleResumeTimer}
       />
 
       <EveningRitualModal
