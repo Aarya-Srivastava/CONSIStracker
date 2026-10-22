@@ -151,6 +151,7 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
   const [showStrictWarning, setShowStrictWarning] = useState(false);
   const [showStairsModal, setShowStairsModal] = useState(false);
   const [lastSessionSec, setLastSessionSec] = useState(0);
+  const [stairsPrevSec, setStairsPrevSec] = useState(0);
   const lastCreatedSessionIdRef = useRef(null);
 
   // Distraction Parking Lot for active session
@@ -477,6 +478,8 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
 
   const endTimer = (verifiedSeconds) => {
     const s = Math.floor(verifiedSeconds);
+    const prevSec = todaySec;
+    setStairsPrevSec(prevSec);
     // Play celebratory end fanfare for meaningful focus, or gentle beep for quick check
     if (s >= 60) {
       playSfx('end', state.mute);
@@ -773,9 +776,14 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
   };
 
   const fmtMinSec = (sec) => {
-    const m = Math.floor(sec / 60);
+    sec = Math.floor(Math.max(0, sec || 0));
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
     const s = Math.floor(sec % 60);
-    return `${m}:${String(s).padStart(2, '0')}`;
+    if (h > 0) {
+      return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
   return (
@@ -2093,7 +2101,10 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
       <StairsOverlay
         isOpen={showStairsModal}
         seconds={lastSessionSec}
+        prevSeconds={stairsPrevSec}
+        dailyGoalHours={todayGoal}
         distractions={sessionDistractions}
+        isMuted={state.mute}
         onClose={() => {
           setShowStairsModal(false);
           lastCreatedSessionIdRef.current = null;

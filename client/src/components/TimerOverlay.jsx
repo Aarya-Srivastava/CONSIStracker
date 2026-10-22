@@ -60,13 +60,14 @@ export default function TimerOverlay({
   };
 
   const fmt = (t) => {
-    t = Math.floor(Math.max(0, t));
+    t = Math.floor(Math.max(0, t || 0));
     const h = Math.floor(t / 3600);
     const m = Math.floor((t % 3600) / 60);
-    const s = t % 60;
-    return h
-      ? `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-      : `${m}:${String(s).padStart(2, '0')}`;
+    const s = Math.floor(t % 60);
+    if (h > 0) {
+      return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   };
 
   // Keyboard shortcut: Press 'D' to open Brain Dump

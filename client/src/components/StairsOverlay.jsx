@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { playSfx } from '../utils/audio';
+import { triggerConfetti } from '../utils/confetti';
 
 // Time-spent review tiers with realistic, motivating feedback
 export function getSessionReview(seconds) {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
+  const hrs = Math.floor(seconds / 3600);
+  const remM = Math.floor((seconds % 3600) / 60);
 
   if (seconds < 60) {
     return {
@@ -20,7 +24,7 @@ export function getSessionReview(seconds) {
       dianoMood: 'curious',
       allowResume: true,
       canCelebrate: false,
-      stairNote: '🐾 First stair unlocks at 15m. Push yourself to take step 1!'
+      stairNote: '🐾 Break starting friction to start taking steps today!'
     };
   }
 
@@ -35,11 +39,11 @@ export function getSessionReview(seconds) {
       durationText: `${m}m ${s > 0 ? `${s}s` : ''} focused`,
       roastText: `You clocked ${m} minute${m > 1 ? 's' : ''}. You broke the initial inertia, but you stopped right before reaching your deep work velocity.`,
       coachAdvice: 'Challenge yourself: stay in your seat for at least 15 to 25 minutes to feel the genuine compound momentum.',
-      targetSteps: 0,
+      targetSteps: 1,
       dianoMood: 'motivating',
       allowResume: true,
       canCelebrate: false,
-      stairNote: '🐾 Almost there! Reach 15 minutes to conquer Step 1.'
+      stairNote: '🐾 Initial inertia broken. Push forward to keep climbing!'
     };
   }
 
@@ -58,7 +62,7 @@ export function getSessionReview(seconds) {
       dianoMood: 'encouraged',
       allowResume: true,
       canCelebrate: true,
-      stairNote: '🎯 Step 1 conquered! The resistance barrier is broken.'
+      stairNote: '🎯 Step climbed! The resistance barrier is broken.'
     };
   }
 
@@ -77,7 +81,7 @@ export function getSessionReview(seconds) {
       dianoMood: 'celebrating',
       allowResume: false,
       canCelebrate: true,
-      stairNote: '🔥 Step 2 reached! Solid disciplined block.'
+      stairNote: '🔥 Solid disciplined block logged!'
     };
   }
 
@@ -96,13 +100,11 @@ export function getSessionReview(seconds) {
       dianoMood: 'celebrating',
       allowResume: false,
       canCelebrate: true,
-      stairNote: '⚡ Step 3 ascended! Deep flow momentum locked in.'
+      stairNote: '⚡ Deep flow momentum locked in!'
     };
   }
 
-  // 60+ minutes
-  const hrs = Math.floor(m / 60);
-  const remM = m % 60;
+  // 60+ minutes (format in hour:min:sec)
   return {
     tier: 'elite',
     badge: '👑 Peak Discipline · Masterclass',
@@ -110,60 +112,212 @@ export function getSessionReview(seconds) {
     badgeBg: 'rgba(251, 191, 36, 0.18)',
     badgeBorder: 'rgba(251, 191, 36, 0.5)',
     title: 'Outstanding Discipline.',
-    durationText: `${hrs}h ${remM > 0 ? `${remM}m` : ''} focused`,
-    roastText: `An elite ${hrs}h+ deep work stretch! You climbed to the very top step of the consistency staircase today.`,
+    durationText: `${hrs}h ${remM > 0 ? `${remM}m ` : ''}${s > 0 ? `${s}s` : ''}`.trim() + ' focused',
+    roastText: `An elite ${hrs}h+ deep work stretch! You sustained high cognitive output without burning out.`,
     coachAdvice: 'Time for a mandatory rest: hydrate, stretch your legs, rest your eyes, and take pride in this win.',
-    targetSteps: 5,
+    targetSteps: 4,
     dianoMood: 'master',
     allowResume: false,
     canCelebrate: true,
-    stairNote: '🏆 Top of the stairs reached! Elite endurance unlocked.'
+    stairNote: '🏆 Elite endurance unlocked!'
   };
+}
+
+// Generate ladder/stair steps based on previous seconds, session seconds, and daily goal hours
+export function generateStairSteps(prevSec = 0, sessionSec = 0, dailyGoalHours = 2) {
+  const goalHours = Math.max(0.5, parseFloat(dailyGoalHours) || 2);
+  const goalSec = Math.round(goalHours * 3600);
+  const safePrevSec = Math.max(0, Math.floor(prevSec || 0));
+  const safeSessionSec = Math.max(0, Math.floor(sessionSec || 0));
+  const totalSec = safePrevSec + safeSessionSec;
+
+  // Step duration increment:
+  // 15m (900s) for goals <= 1h, 30m (1800s) for goals <= 3h, 1h (3600s) for goals > 3h
+  let stepSec = 1800; // 30 min default
+  if (goalHours <= 1) {
+    stepSec = 900;
+  } else if (goalHours <= 3) {
+    stepSec = 1800;
+  } else if (goalHours <= 6) {
+    stepSec = 3600;
+  } else {
+    stepSec = 7200;
+  }
+
+  const maxTimeNeeded = Math.max(goalSec, totalSec) + stepSec * 0.5;
+  const numSteps = Math.min(7, Math.max(4, Math.ceil(maxTimeNeeded / stepSec)));
+
+  const steps = [];
+  let goalStepIndex = -1;
+  let minGoalDiff = Infinity;
+
+  for (let i = 1; i <= numSteps; i++) {
+    const sSec = i * stepSec;
+    const diff = Math.abs(sSec - goalSec);
+    if (diff < minGoalDiff) {
+      minGoalDiff = diff;
+      goalStepIndex = i;
+    }
+
+    const h = sSec / 3600;
+    let label = '';
+    if (h >= 1) {
+      label = Number.isInteger(h) ? `${h}h` : `${h.toFixed(1)}h`;
+    } else {
+      label = `${Math.round(sSec / 60)}m`;
+    }
+
+    steps.push({
+      index: i,
+      sec: sSec,
+      label,
+      isGoal: false,
+      goalLabel: ''
+    });
+  }
+
+  // Set the Red Flag goal step
+  if (goalStepIndex > 0 && goalStepIndex <= steps.length) {
+    steps[goalStepIndex - 1].isGoal = true;
+    steps[goalStepIndex - 1].goalLabel = `${goalHours}h Goal`;
+  }
+
+  // Determine starting step for Diano (based on previous completed seconds)
+  let startStep = 0;
+  for (let i = 0; i < steps.length; i++) {
+    if (safePrevSec >= steps[i].sec) {
+      startStep = steps[i].index;
+    } else if (i === 0 && safePrevSec >= steps[i].sec * 0.4) {
+      startStep = 1;
+    }
+  }
+
+  // Determine ending step for Diano (based on cumulative total seconds)
+  let endStep = startStep;
+  for (let i = 0; i < steps.length; i++) {
+    if (totalSec >= steps[i].sec) {
+      endStep = steps[i].index;
+    } else if (totalSec > (i === 0 ? 0 : steps[i - 1].sec) + (steps[i].sec - (i === 0 ? 0 : steps[i - 1].sec)) * 0.4) {
+      endStep = steps[i].index;
+    }
+  }
+
+  // If a meaningful session (>= 3m) was logged and endStep didn't advance, advance 1 step if room
+  if (safeSessionSec >= 180 && endStep === startStep && endStep < steps.length) {
+    endStep = Math.min(steps.length, startStep + 1);
+  }
+
+  const reachedGoal = totalSec >= goalSec;
+  const reachedGoalThisSession = (safePrevSec < goalSec && totalSec >= goalSec) || (safeSessionSec > 0 && reachedGoal);
+
+  return {
+    steps,
+    goalStepIndex,
+    startStep,
+    endStep,
+    goalSec,
+    prevSec: safePrevSec,
+    totalSec,
+    goalHours,
+    reachedGoal,
+    reachedGoalThisSession
+  };
+}
+
+function formatHMS(sec) {
+  sec = Math.floor(Math.max(0, sec || 0));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = Math.floor(sec % 60);
+  if (h > 0) {
+    return `${h}h ${m > 0 ? `${m}m ` : ''}${s > 0 ? `${s}s` : ''}`.trim();
+  }
+  if (m > 0) {
+    return `${m}m ${s > 0 ? `${s}s` : ''}`.trim();
+  }
+  return `${s}s`;
 }
 
 export default function StairsOverlay({
   isOpen,
   seconds,
+  prevSeconds = 0,
+  dailyGoalHours = 2,
   distractions = [],
+  isMuted = false,
   onClose,
   onResume
 }) {
-  const [activeStep, setActiveStep] = useState(0);
-  const [dianoPos, setDianoPos] = useState({ left: 32, bottom: 0 });
+  const stairData = generateStairSteps(prevSeconds, seconds, dailyGoalHours);
+  const [activeStep, setActiveStep] = useState(stairData.startStep);
+  const [dianoPos, setDianoPos] = useState({ left: '3%', bottom: '0px' });
   const [jump, setJump] = useState(false);
+  const [showGoalCelebration, setShowGoalCelebration] = useState(false);
 
   const review = getSessionReview(seconds);
-  const unit = 15;
 
   useEffect(() => {
     if (!isOpen) return;
 
-    setActiveStep(0);
-    setDianoPos({ left: 32, bottom: 0 });
-    setJump(false);
+    const start = stairData.startStep;
+    const end = stairData.endStep;
+    const stepCount = stairData.steps.length;
 
-    if (review.targetSteps === 0) {
-      // For micro sessions, Diano stays at the base of stairs
-      setDianoPos({ left: 32, bottom: 0 });
+    // Initially position Diano at startStep (where they stood before this session)
+    setActiveStep(start);
+    if (start === 0) {
+      setDianoPos({ left: '3%', bottom: '0px' });
+    } else {
+      const stepWidth = 100 / stepCount;
+      const leftPct = (start - 0.5) * stepWidth;
+      const bottomPx = Math.round((start / stepCount) * 130 + 36);
+      setDianoPos({ left: `${leftPct}%`, bottom: `${bottomPx}px` });
+    }
+    setJump(false);
+    setShowGoalCelebration(stairData.reachedGoal && start >= stairData.goalStepIndex);
+
+    // If no steps climbed this session
+    if (end <= start) {
+      if (stairData.reachedGoal) {
+        setShowGoalCelebration(true);
+      }
       return;
     }
 
     const timers = [];
-    for (let i = 1; i <= review.targetSteps; i++) {
+    const climbSteps = end - start;
+
+    // Step-by-step climb animation from startStep up to endStep
+    for (let offset = 1; offset <= climbSteps; offset++) {
+      const targetS = start + offset;
       timers.push(
         setTimeout(() => {
-          setActiveStep(i);
-          const stepLeft = 64 + (i - 0.5) * 88;
-          setDianoPos({ left: stepLeft, bottom: i * 44 });
-          if (i === review.targetSteps && review.canCelebrate) {
-            setTimeout(() => setJump(true), 450);
+          setActiveStep(targetS);
+          const stepWidth = 100 / stepCount;
+          const leftPct = (targetS - 0.5) * stepWidth;
+          const bottomPx = Math.round((targetS / stepCount) * 130 + 36);
+          setDianoPos({ left: `${leftPct}%`, bottom: `${bottomPx}px` });
+          playSfx('check', isMuted);
+
+          // Reached final climbed step
+          if (targetS === end) {
+            setTimeout(() => setJump(true), 250);
+
+            // Reached or surpassed the Red Flag daily goal!
+            if (targetS >= stairData.goalStepIndex && stairData.reachedGoal) {
+              setTimeout(() => {
+                triggerConfetti();
+                playSfx('celebrate', isMuted);
+                setShowGoalCelebration(true);
+              }, 350);
+            }
           }
-        }, i * 450)
+        }, 350 + offset * 450)
       );
     }
 
     return () => timers.forEach(clearTimeout);
-  }, [isOpen, review.targetSteps, review.canCelebrate]);
+  }, [isOpen, stairData.startStep, stairData.endStep, stairData.steps.length, isMuted]);
 
   if (!isOpen) return null;
 
@@ -172,7 +326,7 @@ export default function StairsOverlay({
       id="stairs"
       role="dialog"
       aria-label="Session saved"
-      className="fixed inset-0 z-50 flex flex-col items-center justify-between p-4 sm:p-8 bg-[radial-gradient(55%_45%_at_50%_72%,rgba(240,178,90,0.18),transparent_75%),radial-gradient(circle_at_50%_45%,#1b2244,#0f1428_62%,#070a16)] text-[#f1ecff] text-center overflow-y-auto"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-between p-4 sm:p-8 bg-[radial-gradient(55%_45%_at_50%_72%,rgba(240,178,90,0.18),transparent_75%),radial-gradient(circle_at_50%_45%,#1b2244,#0f1428_62%,#070a16)] text-[#f1ecff] text-center overflow-y-auto animate-fade-in"
     >
       {/* Header & Review Badge */}
       <div className="pt-2 max-w-xl w-full flex flex-col items-center">
@@ -191,11 +345,17 @@ export default function StairsOverlay({
           {review.title}
         </h2>
 
-        <div
-          className="serif text-xl sm:text-2xl font-normal mt-0.5"
-          style={{ color: review.badgeColor }}
-        >
-          {review.durationText}
+        {/* Dual Duration Pill: This Session + Cumulative Day Progress */}
+        <div className="flex items-center gap-2 mt-1 flex-wrap justify-center">
+          <span
+            className="serif text-xl sm:text-2xl font-normal"
+            style={{ color: review.badgeColor }}
+          >
+            +{formatHMS(seconds)}
+          </span>
+          <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/10 text-gray-200 border border-white/15">
+            Total Today: <b className="text-[var(--lamp)]">{formatHMS(stairData.totalSec)}</b> / {dailyGoalHours}h
+          </span>
         </div>
 
         {/* Dynamic Coach Reality Check & Push Message */}
@@ -216,31 +376,62 @@ export default function StairsOverlay({
         </div>
       </div>
 
-      {/* Stairs stage */}
-      <div className="w-full max-w-[560px] flex flex-col items-center my-3 shrink-0">
-        <div className="relative w-full h-[200px] sm:h-[230px] flex items-end border-b-2 border-[var(--lamp)] pl-10 sm:pl-16">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              className={`flex-1 flex flex-col justify-start items-center text-[11px] pt-1.5 transition-all duration-300 border-t-2 border-l ${
-                i <= activeStep
-                  ? 'bg-gradient-to-b from-[rgba(240,178,90,0.45)] to-[rgba(240,178,90,0.1)] border-t-[var(--lamp)] text-[var(--lamp)] font-semibold'
-                  : 'bg-gradient-to-b from-[rgba(240,178,90,0.14)] to-[rgba(240,178,90,0.03)] border-t-[rgba(240,178,90,0.3)] border-l-[rgba(240,178,90,0.2)] text-[#a9a2cf]'
-              }`}
-              style={{ height: `${i * 38}px` }}
-            >
-              {unit * i}m
-            </div>
-          ))}
+      {/* Stairs & Red Flag Stage */}
+      <div className="w-full max-w-[620px] flex flex-col items-center my-3 shrink-0 px-2">
+        {/* Goal celebration banner */}
+        {showGoalCelebration && (
+          <div className="mb-3 px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-500/25 via-rose-500/30 to-purple-500/25 border border-amber-400 text-amber-200 text-xs sm:text-sm font-bold flex items-center gap-2 shadow-xl animate-bounce">
+            <span>🎉</span>
+            <span>Daily Goal Cleared! {dailyGoalHours}h Red Flag Milestone Conquered!</span>
+            <span>🏆</span>
+          </div>
+        )}
 
-          {/* Mascot climbing */}
+        <div className="relative w-full h-[220px] sm:h-[240px] flex items-end border-b-2 border-[var(--lamp)] px-2 sm:px-4">
+          {stairData.steps.map((st) => {
+            const isReached = st.index <= activeStep;
+            return (
+              <div
+                key={st.index}
+                className={`flex-1 flex flex-col justify-start items-center text-[11px] pt-1.5 relative transition-all duration-300 border-t-2 border-l ${
+                  isReached
+                    ? 'bg-gradient-to-b from-[rgba(240,178,90,0.5)] to-[rgba(240,178,90,0.12)] border-t-[var(--lamp)] text-[var(--lamp)] font-bold'
+                    : 'bg-gradient-to-b from-[rgba(240,178,90,0.12)] to-[rgba(240,178,90,0.02)] border-t-[rgba(240,178,90,0.3)] border-l-[rgba(240,178,90,0.2)] text-[#a9a2cf]'
+                }`}
+                style={{ height: `${Math.round((st.index / stairData.steps.length) * 130 + 36)}px` }}
+              >
+                {/* Step time label */}
+                <span className="text-[10px] sm:text-[11px] font-semibold">{st.label}</span>
+
+                {/* Red Flag for Daily Goal Step */}
+                {st.isGoal && (
+                  <div className="absolute -top-11 left-1/2 -translate-x-1/2 flex flex-col items-center z-20 pointer-events-none">
+                    <div
+                      className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-lg transition-all duration-500 whitespace-nowrap ${
+                        activeStep >= st.index
+                          ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white ring-2 ring-amber-300 shadow-rose-500/50 scale-105'
+                          : 'bg-rose-600 text-white shadow-rose-900/60'
+                      }`}
+                    >
+                      <span>🚩</span>
+                      <span>{st.goalLabel}</span>
+                      {activeStep >= st.index && <span className="text-amber-200">⭐</span>}
+                    </div>
+                    <div className={`w-0.5 h-3 ${activeStep >= st.index ? 'bg-amber-300' : 'bg-rose-400'}`} />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Diano Mascot climbing */}
           <div
-            className={`absolute w-[50px] sm:w-[58px] h-[50px] sm:h-[58px] transition-all duration-500 pointer-events-none ${
+            className={`absolute w-[50px] sm:w-[58px] h-[50px] sm:h-[58px] transition-all duration-500 pointer-events-none z-30 ${
               jump ? 'stairs-jump' : ''
             }`}
             style={{
-              left: `${dianoPos.left}px`,
-              bottom: `${dianoPos.bottom}px`,
+              left: dianoPos.left,
+              bottom: dianoPos.bottom,
               transform: 'translate(-50%, 0)'
             }}
           >
@@ -250,10 +441,17 @@ export default function StairsOverlay({
           </div>
         </div>
 
-        {/* Stair note indicator */}
-        <p className="text-[11px] text-[#b4aecd] mt-2 font-medium">
-          {review.stairNote}
-        </p>
+        {/* Dynamic progress & stair note indicator */}
+        <div className="flex flex-col items-center gap-1 mt-2.5">
+          <p className="text-xs sm:text-sm text-[#ffd480] font-semibold">
+            {activeStep >= stairData.goalStepIndex
+              ? `🏆 Target Achieved: ${formatHMS(stairData.totalSec)} logged today!`
+              : `🚩 ${Math.max(1, Math.round((stairData.goalSec - stairData.totalSec) / 60))}m left to reach your ${dailyGoalHours}h Red Flag!`}
+          </p>
+          <p className="text-[11px] text-[#b4aecd]">
+            {review.stairNote}
+          </p>
+        </div>
       </div>
 
       {/* Parked Distraction Recap */}
