@@ -644,8 +644,97 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
         </div>
       )}
 
-      {/* Header with Sleek Modern Toolbar */}
-      <header className="flex justify-between items-center gap-4 pb-6">
+      {/* Top Utility Bar: Date/Day & Secondary Controls (Volume, Scrapbook, Theme) */}
+      <div className="flex items-center justify-between pb-3 mb-2 border-b border-[var(--line)]/60 text-xs">
+        {/* Left: Date & Day & Time */}
+        <div className="flex items-center gap-2 text-[var(--mut)]">
+          <span className="font-semibold text-[var(--ink)]">
+            {now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+          </span>
+          <span className="opacity-40">·</span>
+          <span className="text-[11px] tabular-nums font-medium">
+            {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+          </span>
+        </div>
+
+        {/* Right: Volume, Scrapbook, Theme Controls */}
+        <div className="flex items-center gap-1.5 p-1 rounded-full bg-[var(--surf)] border border-[var(--line)] shadow-xs">
+          {/* Sound & Volume Control */}
+          <div className="relative flex items-center">
+            <button
+              type="button"
+              onClick={toggleMute}
+              onMouseEnter={() => setShowVolumeSlider(true)}
+              title={state.mute ? 'Unmute sounds' : `Sounds on (${volume}%)`}
+              className="w-7 h-7 rounded-full flex items-center justify-center text-xs text-[var(--mut)] hover:text-[var(--ink)] hover:bg-[var(--surf2)] transition-colors cursor-pointer"
+            >
+              {state.mute || volume === 0 ? '🔕' : '🔔'}
+            </button>
+
+            {/* Volume Slider Popup */}
+            {showVolumeSlider && (
+              <div
+                onMouseLeave={() => setShowVolumeSlider(false)}
+                className="absolute right-0 top-9 z-30 p-2.5 bg-[var(--surf2)] border border-[var(--line)] rounded-2xl shadow-xl flex items-center gap-2.5 min-w-[170px] animate-fade-in"
+              >
+                <span className="text-xs text-[var(--mut)] cursor-pointer" onClick={() => handleVolumeChange(0)}>
+                  🔇
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={state.mute ? 0 : volume}
+                  onChange={(e) => handleVolumeChange(e.target.value)}
+                  className="w-24 accent-[var(--lamp)] cursor-pointer h-1.5"
+                />
+                <span className="text-[11px] font-bold text-[var(--ink)] min-w-[28px] text-right">
+                  {state.mute ? 0 : volume}%
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Scrapbook Icon */}
+          <button
+            type="button"
+            onClick={() => setShowScrapbookModal(true)}
+            title="Scrapbook"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-xs text-[var(--mut)] hover:text-[var(--ink)] hover:bg-[var(--surf2)] transition-colors cursor-pointer"
+          >
+            📖
+          </button>
+
+          <span className="w-px h-3.5 bg-[var(--line)] my-auto opacity-70" />
+
+          {/* Time Zone & Ambient Theme Switcher */}
+          <button
+            type="button"
+            onClick={handleCycleTimeTheme}
+            title={`Time Zone Theme: ${timeThemeMeta.label} (${state.timeTheme && state.timeTheme !== 'auto' ? 'Manual override' : 'Auto-synced with ' + userTimezone}). Click to cycle.`}
+            className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border transition-all cursor-pointer ${timeThemeMeta.pillClass} hover:brightness-110 active:scale-95`}
+          >
+            <span>{timeThemeMeta.icon}</span>
+            <span className="hidden sm:inline">{timeThemeMeta.label}</span>
+            <span className="text-[9px] opacity-75 font-normal">
+              {state.timeTheme && state.timeTheme !== 'auto' ? 'Manual' : 'Auto'}
+            </span>
+          </button>
+
+          {/* Theme Toggle */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title="Switch light or dark mode"
+            className="w-7 h-7 rounded-full flex items-center justify-center text-xs text-[var(--mut)] hover:text-[var(--ink)] hover:bg-[var(--surf2)] transition-colors cursor-pointer"
+          >
+            ◐
+          </button>
+        </div>
+      </div>
+
+      {/* Main Header Row: Logo & Primary Action Pills (User, Habits, Tour, Feedback) */}
+      <header className="flex flex-wrap justify-between items-center gap-4 pb-6">
         <div>
           <div className="serif text-2xl sm:text-3xl font-semibold text-[var(--ink)] tracking-tight">
             Consistracker
@@ -655,160 +744,78 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Subtle Date & Time display */}
-          <div className="hidden lg:flex flex-col text-right text-xs text-[var(--mut)] pr-2 border-r border-[var(--line)]">
-            <span className="font-medium text-[var(--ink)]">
-              {now.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-            </span>
-            <span className="text-[11px] opacity-75">
-              {now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-            </span>
-          </div>
+        {/* Primary Action Pills: User, Habits, Tour, Feedback */}
+        <div className="flex items-center gap-1.5 p-1 rounded-full bg-[var(--surf)] border border-[var(--line)] shadow-sm backdrop-blur-md">
+          {/* User Profile Chip */}
+          <button
+            type="button"
+            onClick={onLogout}
+            title={`Logged in as ${currentUser.username}. Click to switch user or log out`}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--surf2)] hover:bg-[var(--line)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all border border-transparent hover:border-[var(--line)]"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="max-w-[80px] truncate">{currentUser.username}</span>
+            <span className="text-[10px] text-[var(--mut)]">↳</span>
+          </button>
 
-          {/* Unified Glassmorphic Action Bar */}
-          <div className="flex items-center gap-1.5 p-1 rounded-full bg-[var(--surf)] border border-[var(--line)] shadow-sm backdrop-blur-md">
-            {/* User Profile Chip */}
-            <button
-              type="button"
-              onClick={onLogout}
-              title={`Logged in as ${currentUser.username}. Click to switch user or log out`}
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--surf2)] hover:bg-[var(--line)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all border border-transparent hover:border-[var(--line)]"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span className="max-w-[80px] truncate">{currentUser.username}</span>
-              <span className="text-[10px] text-[var(--mut)]">↳</span>
-            </button>
-
-            {/* Habits Quick Pill */}
-            <button
-              type="button"
-              onClick={() => setShowHabitModal(true)}
-              title="Open Habit Tracker & Monthly Goals"
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--surf2)] hover:border-[var(--lamp)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all border border-transparent"
-            >
-              <span>🎯</span>
-              <span className="hidden sm:inline">Habits</span>
-              {habits.length > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[var(--lamp)]/25 text-[var(--lamp)] font-bold">
-                  {habits.filter((h) => h.history && h.history[todayIso]).length}/{habits.length}
-                </span>
-              )}
-            </button>
-
-            {/* Interactive Tutorial Tour Button */}
-            {onOpenTutorial && (
-              <button
-                type="button"
-                onClick={onOpenTutorial}
-                title="Interactive Feature Tour & Domain Setup"
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/15 via-[var(--lamp)]/15 to-emerald-500/15 hover:border-[var(--lamp)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all border border-amber-500/30 hover:scale-105 active:scale-95 shadow-xs"
-              >
-                <span>💡</span>
-                <span className="hidden sm:inline">Tour</span>
-              </button>
+          {/* Habits Quick Pill */}
+          <button
+            type="button"
+            onClick={() => setShowHabitModal(true)}
+            title="Open Habit Tracker & Monthly Goals"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--surf2)] hover:border-[var(--lamp)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all border border-transparent"
+          >
+            <span>🎯</span>
+            <span className="hidden sm:inline">Habits</span>
+            {habits.length > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-[var(--lamp)]/25 text-[var(--lamp)] font-bold">
+                {habits.filter((h) => h.history && h.history[todayIso]).length}/{habits.length}
+              </span>
             )}
+          </button>
 
-            {/* Scrapbook Icon */}
+          {/* Interactive Tutorial Tour Button */}
+          {onOpenTutorial && (
             <button
               type="button"
-              onClick={() => setShowScrapbookModal(true)}
-              title="Scrapbook"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[var(--mut)] hover:text-[var(--ink)] hover:bg-[var(--surf2)] transition-colors cursor-pointer"
+              onClick={onOpenTutorial}
+              title="Interactive Feature Tour & Domain Setup"
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/15 via-[var(--lamp)]/15 to-emerald-500/15 hover:border-[var(--lamp)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all border border-amber-500/30 hover:scale-105 active:scale-95 shadow-xs"
             >
-              📖
+              <span>💡</span>
+              <span className="hidden sm:inline">Tour</span>
             </button>
+          )}
 
-            {/* Cute Trial Feedback Pill */}
+          {/* Cute Trial Feedback Pill */}
+          <button
+            type="button"
+            onClick={() => setShowFeedbackModal(true)}
+            title="Trial Run Feedback - Tell us what you think!"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500/15 via-rose-500/15 to-amber-500/15 hover:border-rose-400 text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all border border-rose-500/30 hover:scale-105 active:scale-95 shadow-xs"
+          >
+            <span>💬</span>
+            <span className="hidden sm:inline">Feedback</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
+          </button>
+
+          {/* Admin Feedback Vault Pill (Visible to admin) */}
+          {currentUser?.username?.toLowerCase() === 'admin' && (
             <button
               type="button"
               onClick={() => setShowFeedbackModal(true)}
-              title="Trial Run Feedback - Tell us what you think!"
-              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500/15 via-rose-500/15 to-amber-500/15 hover:border-rose-400 text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all border border-rose-500/30 hover:scale-105 active:scale-95 shadow-xs"
+              title={`Admin Dashboard & Site Analytics (${adminStats ? adminStats.totalVisits + ' total visits, ' + adminStats.todayVisits + ' today' : 'Click to view'})`}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 hover:border-purple-400 text-xs font-bold text-purple-300 cursor-pointer transition-all border border-purple-500/40 hover:scale-105 active:scale-95 shadow-xs"
             >
-              <span>💬</span>
-              <span className="hidden sm:inline">Feedback</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" />
-            </button>
-
-            {/* Admin Feedback Vault Pill (Visible to admin) */}
-            {currentUser?.username?.toLowerCase() === 'admin' && (
-              <button
-                type="button"
-                onClick={() => setShowFeedbackModal(true)}
-                title={`Admin Dashboard & Site Analytics (${adminStats ? adminStats.totalVisits + ' total visits, ' + adminStats.todayVisits + ' today' : 'Click to view'})`}
-                className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/20 hover:border-purple-400 text-xs font-bold text-purple-300 cursor-pointer transition-all border border-purple-500/40 hover:scale-105 active:scale-95 shadow-xs"
-              >
-                <span>🛡️</span>
-                <span>Admin</span>
-                {adminStats && (
-                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-400/20 text-purple-200 border border-purple-400/30">
-                    👁️ {adminStats.totalVisits}
-                  </span>
-                )}
-              </button>
-            )}
-
-            {/* Sound & Volume Control */}
-            <div className="relative flex items-center">
-              <button
-                type="button"
-                onClick={toggleMute}
-                onMouseEnter={() => setShowVolumeSlider(true)}
-                title={state.mute ? 'Unmute sounds' : `Sounds on (${volume}%)`}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[var(--mut)] hover:text-[var(--ink)] hover:bg-[var(--surf2)] transition-colors cursor-pointer"
-              >
-                {state.mute || volume === 0 ? '🔕' : '🔔'}
-              </button>
-
-              {/* Volume Slider Popup */}
-              {showVolumeSlider && (
-                <div
-                  onMouseLeave={() => setShowVolumeSlider(false)}
-                  className="absolute right-0 top-10 z-30 p-3 bg-[var(--surf2)] border border-[var(--line)] rounded-2xl shadow-xl flex items-center gap-2.5 min-w-[170px] animate-fade-in"
-                >
-                  <span className="text-xs text-[var(--mut)] cursor-pointer" onClick={() => handleVolumeChange(0)}>
-                    🔇
-                  </span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={state.mute ? 0 : volume}
-                    onChange={(e) => handleVolumeChange(e.target.value)}
-                    className="w-24 accent-[var(--lamp)] cursor-pointer h-1.5"
-                  />
-                  <span className="text-[11px] font-bold text-[var(--ink)] min-w-[28px] text-right">
-                    {state.mute ? 0 : volume}%
-                  </span>
-                </div>
+              <span>🛡️</span>
+              <span>Admin</span>
+              {adminStats && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-purple-400/20 text-purple-200 border border-purple-400/30">
+                  👁️ {adminStats.totalVisits}
+                </span>
               )}
-            </div>
-
-            {/* Time Zone & Ambient Theme Switcher */}
-            <button
-              type="button"
-              onClick={handleCycleTimeTheme}
-              title={`Time Zone Theme: ${timeThemeMeta.label} (${state.timeTheme && state.timeTheme !== 'auto' ? 'Manual override' : 'Auto-synced with ' + userTimezone}). Click to cycle.`}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer ${timeThemeMeta.pillClass} hover:brightness-110 active:scale-95`}
-            >
-              <span>{timeThemeMeta.icon}</span>
-              <span className="hidden sm:inline">{timeThemeMeta.label}</span>
-              <span className="text-[9px] opacity-75 font-normal">
-                {state.timeTheme && state.timeTheme !== 'auto' ? 'Manual' : 'Auto'}
-              </span>
             </button>
-
-            {/* Theme Toggle */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              title="Switch light or dark mode"
-              className="w-8 h-8 rounded-full flex items-center justify-center text-sm text-[var(--mut)] hover:text-[var(--ink)] hover:bg-[var(--surf2)] transition-colors cursor-pointer"
-            >
-              ◐
-            </button>
-          </div>
+          )}
         </div>
       </header>
 

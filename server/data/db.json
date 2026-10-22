@@ -27,6 +27,15 @@
             "tag": "Focus",
             "color": "#94a3b8",
             "note": "Focus session"
+          },
+          {
+            "id": "t1792672294198",
+            "date": "2026-10-22",
+            "sec": 6,
+            "type": "timed",
+            "tag": "Focus",
+            "color": "#94a3b8",
+            "note": "Focus session"
           }
         ],
         "scrap": [],
@@ -233,8 +242,8 @@
   },
   "feedbacks": [],
   "stats": {
-    "totalVisits": 44,
-    "todayVisits": 40,
+    "totalVisits": 48,
+    "todayVisits": 44,
     "lastVisitDate": "2026-10-22"
   }
 }
