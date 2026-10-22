@@ -366,6 +366,43 @@ export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
                   This username already exists. Please choose a unique name or switch to Sign In.
                 </p>
               )}
+
+              {!isRegisterMode && (
+                <div className="flex items-center gap-2 mt-2 px-1 flex-wrap">
+                  <span className="text-[11px] text-gray-300 font-medium">Quick fill:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUsername('default');
+                      setPassword('focus');
+                      setStatus({ text: '', type: '' });
+                    }}
+                    className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium border transition-all cursor-pointer ${
+                      username.toLowerCase() === 'default'
+                        ? 'bg-white/20 border-white/50 text-white font-bold'
+                        : 'bg-white/5 border-white/15 text-gray-300 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    guest (default)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUsername('admin');
+                      setPassword('admin123');
+                      setStatus({ text: '', type: '' });
+                    }}
+                    className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium border transition-all cursor-pointer flex items-center gap-1 ${
+                      username.toLowerCase() === 'admin'
+                        ? 'bg-purple-500/30 border-purple-400 text-purple-200 font-bold'
+                        : 'bg-purple-500/10 border-purple-400/20 text-purple-300 hover:bg-purple-500/20'
+                    }`}
+                  >
+                    <span>🛡️</span>
+                    <span>admin</span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* 2. PASSWORD INPUT BOX */}
