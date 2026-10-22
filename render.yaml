@@ -3,7 +3,7 @@ services:
     name: consistracker
     env: node
     plan: free
-    buildCommand: npm run postinstall && npm run build
+    buildCommand: npm run postinstall
     startCommand: npm start
     envVars:
       - key: NODE_ENV

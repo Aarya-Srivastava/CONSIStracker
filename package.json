@@ -8,9 +8,9 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node server/server.js",
     "client": "npm --prefix client run dev",
-    "build": "npm --prefix client run build",
     "install:all": "npm install && npm --prefix server install && npm --prefix client install",
-    "postinstall": "npm --prefix server install && npm --prefix client install && npm --prefix client run build"
+    "postinstall": "npm --prefix server install && npm --prefix client install --include=dev && npm --prefix client run build",
+    "build": "npm --prefix client run build"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
