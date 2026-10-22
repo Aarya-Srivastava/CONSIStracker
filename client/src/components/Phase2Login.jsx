@@ -4,9 +4,9 @@ import { api } from '../utils/api';
 export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
   const [username, setUsername] = useState(() => {
     try {
-      return localStorage.getItem('consis_last_username') || 'default';
+      return localStorage.getItem('consis_last_username') || '';
     } catch (e) {
-      return 'default';
+      return '';
     }
   });
   const [password, setPassword] = useState('');
@@ -21,7 +21,7 @@ export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
 
   // Reset Password Modal State
   const [showResetModal, setShowResetModal] = useState(false);
-  const [resetUsername, setResetUsername] = useState('default');
+  const [resetUsername, setResetUsername] = useState('');
   const [resetNewPassword, setResetNewPassword] = useState('');
   const [resetStatus, setResetStatus] = useState({ text: '', type: '' });
   const [isResetLoading, setIsResetLoading] = useState(false);
@@ -319,11 +319,6 @@ export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
               <div className="flex items-center justify-between mb-1.5 px-1">
                 <label className="text-xs font-semibold text-gray-200 uppercase tracking-wider flex items-center gap-1.5">
                   <span>👤 Username</span>
-                  {!isRegisterMode && (
-                    <span className="text-[10px] lowercase text-white/50 font-normal">
-                      (e.g. <code className="bg-white/10 px-1 py-0.5 rounded text-white/80 font-mono">default</code> or your name)
-                    </span>
-                  )}
                 </label>
 
                 {/* Real-time username check tag for new users */}
@@ -354,7 +349,7 @@ export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={isSuccess || isLoading}
-                placeholder="e.g. default, aarya, admin"
+                placeholder="Enter username"
                 className={`w-full px-5 py-3.5 rounded-xl font-medium text-base text-white bg-black/40 border outline-none transition-all focus:bg-black/60 ${
                   isRegisterMode && usernameCheck === 'exists'
                     ? 'border-rose-400 focus:border-rose-300'
@@ -365,43 +360,6 @@ export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
                 <p className="text-[11px] text-rose-300 mt-1 px-1 font-medium">
                   This username already exists. Please choose a unique name or switch to Sign In.
                 </p>
-              )}
-
-              {!isRegisterMode && (
-                <div className="flex items-center gap-2 mt-2 px-1 flex-wrap">
-                  <span className="text-[11px] text-gray-300 font-medium">Quick fill:</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUsername('default');
-                      setPassword('focus');
-                      setStatus({ text: '', type: '' });
-                    }}
-                    className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium border transition-all cursor-pointer ${
-                      username.toLowerCase() === 'default'
-                        ? 'bg-white/20 border-white/50 text-white font-bold'
-                        : 'bg-white/5 border-white/15 text-gray-300 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    guest (default)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUsername('admin');
-                      setPassword('admin123');
-                      setStatus({ text: '', type: '' });
-                    }}
-                    className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium border transition-all cursor-pointer flex items-center gap-1 ${
-                      username.toLowerCase() === 'admin'
-                        ? 'bg-purple-500/30 border-purple-400 text-purple-200 font-bold'
-                        : 'bg-purple-500/10 border-purple-400/20 text-purple-300 hover:bg-purple-500/20'
-                    }`}
-                  >
-                    <span>🛡️</span>
-                    <span>admin</span>
-                  </button>
-                </div>
               )}
             </div>
 
@@ -468,7 +426,7 @@ export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
               <button
                 type="button"
                 onClick={() => {
-                  setResetUsername(username || 'default');
+                  setResetUsername(username || '');
                   setResetNewPassword('');
                   setResetStatus({ text: '', type: '' });
                   setShowResetModal(true);
@@ -527,7 +485,7 @@ export default function Phase2Login({ onUnlockSuccess, sessions = [] }) {
                   type="text"
                   value={resetUsername}
                   onChange={(e) => setResetUsername(e.target.value)}
-                  placeholder="e.g. default, aarya"
+                  placeholder="Enter username"
                   className="w-full px-4 py-2.5 rounded-xl text-sm text-white bg-black/40 border border-white/20 outline-none focus:border-white/60"
                   required
                 />
