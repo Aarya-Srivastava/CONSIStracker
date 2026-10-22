@@ -243,76 +243,38 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
 
   const isPetAwake = timerRunning || progressPct >= 1;
 
-  // Daily Focus Hours Goal Challenge (Motivates user to complete today's focus hours target)
-  const goalChallengeInfo = useMemo(() => {
-    const isGoalAchieved = todaySec >= todayGoalSec && todayGoalSec > 0;
-    const isClaimed = Boolean(
-      state.dailyChallenge &&
-      state.dailyChallenge.date === todayIso &&
-      state.dailyChallenge.completed
-    );
-    const pct = Math.min(100, Math.round((todaySec / (todayGoalSec || 1)) * 100));
-    const loggedHours = (todaySec / 3600).toFixed(1);
-    const remainingSec = Math.max(0, todayGoalSec - todaySec);
-    const remMinutes = Math.ceil(remainingSec / 60);
-    const remHours = (remainingSec / 3600).toFixed(1);
+  // -------------------------------------------------------------
+  // Daily 3-Star Milestone Milestones (Hybrid Goal Engine)
+  // -------------------------------------------------------------
+  const star1Sec = Math.min(15 * 60, Math.floor(todayGoalSec * 0.25));
+  const star2Sec = Math.floor(todayGoalSec * 0.5);
+  const star3Sec = todayGoalSec;
 
-    let statusMessage = '';
-    let motivationTip = '';
-    let icon = '🎯';
+  const star1Earned = todaySec >= star1Sec && todaySec > 0;
+  const star2Earned = todaySec >= star2Sec && todaySec > 0;
+  const star3Earned = todaySec >= star3Sec && todaySec > 0;
 
-    if (isGoalAchieved) {
-      icon = '🎉';
-      statusMessage = `Goal Crushed! You logged ${loggedHours}h of deep focus today (${pct}% of your ${todayGoal}h target)!`;
-      motivationTip = isClaimed
-        ? 'You earned +50 XP today! Keep stacking focus hours or call it a day.'
-        : 'You conquered today’s challenge! Claim your +50 Dopamine XP reward below.';
-    } else if (pct >= 75) {
-      icon = '🔥';
-      statusMessage = `Final stretch! You're at ${pct}% (${loggedHours}h / ${todayGoal}h).`;
-      motivationTip = `Only ${remMinutes} minute${remMinutes === 1 ? '' : 's'} (${remHours}h) left to complete today's challenge. Push through and close it out!`;
-    } else if (pct >= 50) {
-      icon = '⚡';
-      statusMessage = `Halfway mark passed! You're at ${pct}% (${loggedHours}h / ${todayGoal}h).`;
-      motivationTip = `Momentum is on your side. Another ${remMinutes} minutes and you'll clear today's hours challenge!`;
-    } else if (pct > 0) {
-      icon = '🌱';
-      statusMessage = `Underway! You've logged ${loggedHours}h of your ${todayGoal}h goal (${pct}%).`;
-      motivationTip = `Starting is the hardest part. Stay in flow — ${remMinutes} minutes remaining to conquer today's challenge!`;
-    } else {
-      icon = '🎯';
-      statusMessage = `Today's Challenge: Hit your ${todayGoal}h focus goal!`;
-      motivationTip = `No focus time logged yet today. Fire up a session, put distractions away, and let's make progress!`;
-    }
+  const claimedMilestones = (state.claimedMilestones && state.claimedMilestones[todayIso]) || [];
+  const star1Claimed = claimedMilestones.includes('star1');
+  const star2Claimed = claimedMilestones.includes('star2');
+  const star3Claimed = claimedMilestones.includes('star3');
 
-    return {
-      isGoalAchieved,
-      isClaimed,
-      pct,
-      loggedHours,
-      remMinutes,
-      remHours,
-      statusMessage,
-      motivationTip,
-      icon
-    };
-  }, [todaySec, todayGoalSec, todayGoal, state.dailyChallenge, todayIso]);
-
-  const handleCompleteDailyChallenge = () => {
+  const handleClaimMilestone = (starId, xpBonus, label) => {
+    if (claimedMilestones.includes(starId)) return;
     triggerConfetti();
     playSfx('celebrate', state.mute);
-    const newXp = (state.dopamineXp || 0) + 50;
-    showToast(`⚡ Daily Challenge Complete! +50 Dopamine XP unlocked! (Total: ${newXp} XP)`);
+    const newXp = (state.dopamineXp || 0) + xpBonus;
+    showToast(`🌟 Milestone Unlocked: ${label}! (+${xpBonus} XP)`);
+
+    const updatedMap = {
+      ...(state.claimedMilestones || {}),
+      [todayIso]: [...claimedMilestones, starId]
+    };
 
     onUpdateState({
       ...state,
       dopamineXp: newXp,
-      dailyChallenge: {
-        date: todayIso,
-        challengeId: 'hours_goal_' + todayGoal,
-        completed: true,
-        completedAt: new Date().toISOString()
-      }
+      claimedMilestones: updatedMap
     });
   };
 
@@ -998,6 +960,87 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
             </div>
           </button>
 
+          {/* Daily 3-Star Milestone Track (Unified Hybrid Goal) */}
+          <div className="w-full max-w-[min(380px,90vw)] my-3 p-3 rounded-2xl bg-[var(--surf2)]/60 border border-[var(--line)] shadow-inner">
+            <div className="flex items-center justify-between text-xs font-semibold mb-2 px-1">
+              <span className="text-[var(--mut)] uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                <span>⚡ Daily Goal Milestones</span>
+              </span>
+              <span className="text-[11px] font-bold text-[var(--lamp)] tabular-nums">
+                {Math.round(progressPct * 100)}% ({fmtMinSec(todaySec)} / {todayGoal}h)
+              </span>
+            </div>
+
+            {/* 3 Interactive Star Cards */}
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+              {/* Star 1: 15m Starter */}
+              <button
+                type="button"
+                disabled={!star1Earned || star1Claimed}
+                onClick={() => handleClaimMilestone('star1', 10, 'Starter 15m')}
+                className={`p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-center relative overflow-hidden ${
+                  star1Claimed
+                    ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-300'
+                    : star1Earned
+                    ? 'bg-amber-400/25 border-amber-400 text-amber-200 animate-pulse cursor-pointer shadow-md shadow-amber-400/20 hover:scale-105 active:scale-95'
+                    : 'bg-[var(--surf)] border-[var(--line)]/60 text-[var(--mut)] opacity-60 cursor-default'
+                }`}
+              >
+                <span className="text-base sm:text-lg mb-0.5">⭐</span>
+                <span className="text-[10px] sm:text-xs font-bold leading-tight">
+                  {star1Claimed ? '✓ 15m Done' : star1Earned ? '+10 XP Claim' : '15m Starter'}
+                </span>
+                <span className="text-[9px] opacity-75 mt-0.5">
+                  {star1Claimed ? 'Claimed' : star1Earned ? 'Tap for XP!' : `${Math.max(0, Math.ceil((star1Sec - todaySec) / 60))}m left`}
+                </span>
+              </button>
+
+              {/* Star 2: 50% Halfway */}
+              <button
+                type="button"
+                disabled={!star2Earned || star2Claimed}
+                onClick={() => handleClaimMilestone('star2', 20, 'Halfway Mark')}
+                className={`p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-center relative overflow-hidden ${
+                  star2Claimed
+                    ? 'bg-emerald-500/15 border-emerald-500/35 text-emerald-300'
+                    : star2Earned
+                    ? 'bg-amber-400/25 border-amber-400 text-amber-200 animate-pulse cursor-pointer shadow-md shadow-amber-400/20 hover:scale-105 active:scale-95'
+                    : 'bg-[var(--surf)] border-[var(--line)]/60 text-[var(--mut)] opacity-60 cursor-default'
+                }`}
+              >
+                <span className="text-base sm:text-lg mb-0.5">⭐⭐</span>
+                <span className="text-[10px] sm:text-xs font-bold leading-tight">
+                  {star2Claimed ? '✓ 50% Done' : star2Earned ? '+20 XP Claim' : '50% Halfway'}
+                </span>
+                <span className="text-[9px] opacity-75 mt-0.5">
+                  {star2Claimed ? 'Claimed' : star2Earned ? 'Tap for XP!' : `${Math.max(0, Math.ceil((star2Sec - todaySec) / 60))}m left`}
+                </span>
+              </button>
+
+              {/* Star 3: 100% Goal Cleared */}
+              <button
+                type="button"
+                disabled={!star3Earned || star3Claimed}
+                onClick={() => handleClaimMilestone('star3', 50, 'Goal Crushed!')}
+                className={`p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-center relative overflow-hidden ${
+                  star3Claimed
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300'
+                    : star3Earned
+                    ? 'bg-gradient-to-r from-amber-400 via-[var(--lamp)] to-emerald-400 text-[#1b1730] font-extrabold animate-bounce cursor-pointer shadow-lg hover:scale-105 active:scale-95'
+                    : 'bg-[var(--surf)] border-[var(--line)]/60 text-[var(--mut)] opacity-60 cursor-default'
+                }`}
+              >
+                <span className="text-base sm:text-lg mb-0.5">👑</span>
+                <span className="text-[10px] sm:text-xs font-bold leading-tight">
+                  {star3Claimed ? '✓ Crushed!' : star3Earned ? '+50 XP Claim' : '100% Goal'}
+                </span>
+                <span className="text-[9px] opacity-75 mt-0.5">
+                  {star3Claimed ? 'Victory!' : star3Earned ? 'Tap reward!' : `${Math.max(0, Math.ceil((star3Sec - todaySec) / 60))}m left`}
+                </span>
+              </button>
+            </div>
+          </div>
+
           {/* Quick "5-Minute Pact" Trigger (Anti-Procrastination / Break Starting Inertia) */}
           <button
             type="button"
@@ -1516,110 +1559,6 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
             </div>
           </div>
         )}
-      </section>
-
-      {/* Daily Focus Hours Goal Challenge */}
-      <section className="relative overflow-hidden rounded-[26px] border border-[var(--line)] bg-[var(--surf)] p-5 sm:p-6 mt-6 transition-all shadow-sm">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-amber-500/10 via-[var(--lamp)]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex items-start justify-between flex-wrap gap-3 mb-3">
-          <div className="flex items-center gap-3">
-            <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400/20 to-[var(--lamp)]/20 border border-amber-400/30 flex items-center justify-center text-2xl shadow-xs">
-              {goalChallengeInfo.icon}
-            </span>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                  ⚡ DAILY FOCUS CHALLENGE
-                </span>
-                <span className="text-[10px] font-semibold text-[var(--mut)] px-2 py-0.5 rounded-md bg-[var(--surf2)] border border-[var(--line)]">
-                  {todayGoal}h Target
-                </span>
-                <span className="text-[10px] font-bold text-emerald-400 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
-                  +50 Dopamine XP
-                </span>
-              </div>
-              <h3 className="serif text-lg sm:text-xl font-normal text-[var(--ink)] mt-1">
-                Complete Your {todayGoal}h Focus Goal Today
-              </h3>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[var(--surf2)] border border-[var(--line)] text-[var(--lamp)] flex items-center gap-1">
-              <span>⚡</span>
-              <span>{state.dopamineXp || 0} XP</span>
-            </span>
-          </div>
-        </div>
-
-        {/* Live Progress Bar toward Today's Goal */}
-        <div className="my-3 p-3 rounded-2xl bg-[var(--surf2)]/50 border border-[var(--line)]/60">
-          <div className="flex items-center justify-between text-xs mb-1.5 flex-wrap gap-1">
-            <span className="font-semibold text-[var(--ink)] flex items-center gap-1.5">
-              <span>{goalChallengeInfo.statusMessage}</span>
-            </span>
-            <span className="font-bold text-[var(--lamp)] tabular-nums">
-              {goalChallengeInfo.loggedHours}h / {todayGoal}h ({goalChallengeInfo.pct}%)
-            </span>
-          </div>
-          <div className="w-full h-3 rounded-full bg-[var(--surf)] border border-[var(--line)] overflow-hidden p-0.5">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-amber-400 via-[var(--lamp)] to-emerald-400 transition-all duration-500 shadow-sm"
-              style={{ width: `${goalChallengeInfo.pct}%` }}
-            />
-          </div>
-        </div>
-
-        <p className="text-xs sm:text-sm text-[var(--mut)] mb-4 max-w-2xl leading-relaxed">
-          {goalChallengeInfo.motivationTip}
-        </p>
-
-        <div className="flex items-center justify-between flex-wrap gap-3 pt-3 border-t border-[var(--line)]/60">
-          <div className="flex items-center gap-2 text-xs text-[var(--mut)]">
-            <span>Status:</span>
-            {goalChallengeInfo.isClaimed ? (
-              <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold">
-                <span>✓ Challenge Completed & XP Claimed!</span>
-              </span>
-            ) : goalChallengeInfo.isGoalAchieved ? (
-              <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold animate-pulse">
-                <span>🎉 Hours target conquered! Claim your +50 XP reward!</span>
-              </span>
-            ) : (
-              <span className="text-amber-400 font-medium">
-                {goalChallengeInfo.remMinutes}m focus remaining to unlock XP reward
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {goalChallengeInfo.isClaimed ? (
-              <div className="px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-1.5 shadow-xs">
-                <span>🌟</span>
-                <span>Challenge Cleared (+50 XP)</span>
-              </div>
-            ) : goalChallengeInfo.isGoalAchieved ? (
-              <button
-                type="button"
-                onClick={handleCompleteDailyChallenge}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-[var(--lamp)] to-emerald-400 text-[#1b1730] text-xs font-bold shadow-md hover:brightness-110 active:scale-95 cursor-pointer transition-all flex items-center gap-1.5 animate-bounce"
-              >
-                <span>⚡</span>
-                <span>Claim +50 XP Reward!</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => startTimer()}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-[var(--lamp)]/20 border border-[var(--lamp)]/40 text-[var(--lamp)] hover:bg-[var(--lamp)] hover:text-[#1b1730] text-xs font-bold shadow-xs hover:brightness-110 active:scale-95 cursor-pointer transition-all flex items-center gap-1.5"
-              >
-                <span>⏱️</span>
-                <span>Start Focus Session</span>
-              </button>
-            )}
-          </div>
-        </div>
       </section>
 
       {/* Action Buttons: Add Hours & Call It a Day */}
