@@ -30,8 +30,8 @@ export default function DayGoalModal({
 
   const handleSave = () => {
     const val = parseFloat(goalHours);
-    if (!(val >= 0.25 && val <= 16)) {
-      alert('Enter a goal between 0.25 and 16 hours');
+    if (!(val >= 0.25 && val <= 20)) {
+      alert('Enter a goal between 0.25 and 20 hours');
       return;
     }
     onSave(date, Math.round(val * 100) / 100, note.trim(), false);
@@ -51,15 +51,38 @@ export default function DayGoalModal({
 
         <div className="flex flex-col gap-3">
           <div>
-            <label className="block text-xs text-[var(--mut)] mb-1">Study goal (hours)</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs text-[var(--mut)]">Study goal (hours)</label>
+              <span className="text-xs font-bold text-[var(--lamp)]">{goalHours}h</span>
+            </div>
+
+            {/* Quick Goal Presets */}
+            <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+              {[1, 2, 3, 4, 6, 8, 10, 12].map((h) => (
+                <button
+                  key={h}
+                  type="button"
+                  onClick={() => setGoalHours(h)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold border cursor-pointer transition-all ${
+                    parseFloat(goalHours) === h
+                      ? 'bg-[var(--lamp)] text-[#1b1730] border-[var(--lamp)] shadow-xs'
+                      : 'bg-[var(--surf2)] text-[var(--ink)] border-[var(--line)] hover:border-[var(--lamp)]'
+                  }`}
+                >
+                  {h}h
+                </button>
+              ))}
+            </div>
+
             <input
               type="number"
               min="0.25"
-              max="16"
+              max="20"
               step="0.25"
+              placeholder="Enter custom hours (e.g. 7)"
               value={goalHours}
               onChange={(e) => setGoalHours(e.target.value)}
-              className="w-full bg-[var(--surf2)] border border-[var(--line)] rounded-xl px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--lamp)]"
+              className="w-full bg-[var(--surf2)] border border-[var(--line)] rounded-xl px-3 py-2 text-sm text-[var(--ink)] outline-none focus:border-[var(--lamp)] font-medium"
             />
           </div>
 

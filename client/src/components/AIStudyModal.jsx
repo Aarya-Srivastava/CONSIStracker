@@ -279,27 +279,61 @@ export default function AIStudyModal({
                   </div>
                 </div>
 
-                {/* Daily Hours */}
+                {/* Daily Hours with Custom Option */}
                 <div className="p-4 rounded-2xl bg-[var(--surf2)]/50 border border-[var(--line)]">
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-semibold uppercase tracking-wider text-[var(--mut)]">
                       4. Hours / Day
                     </label>
-                    <span className="text-sm font-bold text-[var(--lamp)]">{hoursPerDay}h daily</span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min="0.25"
+                        max="18"
+                        step="0.5"
+                        value={hoursPerDay}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val)) setHoursPerDay(Math.max(0.25, Math.min(18, val)));
+                        }}
+                        className="w-16 px-2 py-0.5 rounded-lg bg-[var(--surf)] border border-[var(--line)] text-xs font-bold text-[var(--lamp)] text-center outline-none focus:border-[var(--lamp)]"
+                      />
+                      <span className="text-xs font-bold text-[var(--lamp)]">h daily</span>
+                    </div>
                   </div>
                   <input
                     type="range"
                     min="0.5"
-                    max="6"
+                    max="14"
                     step="0.5"
-                    value={hoursPerDay}
+                    value={Math.min(14, hoursPerDay)}
                     onChange={(e) => setHoursPerDay(parseFloat(e.target.value))}
                     className="w-full accent-[var(--lamp)] cursor-pointer h-1.5"
                   />
                   <div className="flex justify-between text-[10px] text-[var(--mut)] mt-1">
                     <span>30 min</span>
-                    <span>2.5 hours</span>
-                    <span>6 hours</span>
+                    <span>4 hours</span>
+                    <span>8 hours</span>
+                    <span>14 hours</span>
+                  </div>
+
+                  {/* Preset quick chips */}
+                  <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
+                    <span className="text-[10px] text-[var(--mut)]">Presets:</span>
+                    {[1, 2, 3, 4, 6, 8, 10, 12].map((h) => (
+                      <button
+                        key={h}
+                        type="button"
+                        onClick={() => setHoursPerDay(h)}
+                        className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border cursor-pointer transition-all ${
+                          hoursPerDay === h
+                            ? 'bg-[var(--lamp)] text-[#1b1730] border-[var(--lamp)]'
+                            : 'bg-[var(--surf)] text-[var(--ink)] border-[var(--line)] hover:border-[var(--lamp)]'
+                        }`}
+                      >
+                        {h}h
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>

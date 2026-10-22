@@ -133,7 +133,9 @@ const GOALS = [
   { val: 1, label: '1 hour' },
   { val: 2, label: '2 hours' },
   { val: 3, label: '3 hours' },
-  { val: 4, label: '4 hours' }
+  { val: 4, label: '4 hours' },
+  { val: 6, label: '6 hours' },
+  { val: 8, label: '8 hours' }
 ];
 
 export default function WelcomeModal({
@@ -369,7 +371,7 @@ export default function WelcomeModal({
                 Pick a study target small enough to keep on your busiest days. Consistency beats intensity every single time.
               </p>
 
-              <div className="flex gap-2.5 flex-wrap justify-center mb-6">
+              <div className="flex gap-2.5 flex-wrap justify-center items-center mb-6 max-w-lg mx-auto">
                 {GOALS.map((g) => (
                   <button
                     key={g.val}
@@ -378,7 +380,7 @@ export default function WelcomeModal({
                       setSelectedGoal(g.val);
                       playSfx('check');
                     }}
-                    className={`border rounded-2xl px-5 py-2.5 text-xs sm:text-sm transition-all cursor-pointer ${
+                    className={`border rounded-2xl px-4 py-2 text-xs sm:text-sm transition-all cursor-pointer ${
                       selectedGoal === g.val
                         ? 'bg-[var(--lamp)] text-[#1b1730] border-[var(--lamp)] font-bold shadow-md scale-105'
                         : 'bg-[var(--surf2)] text-[var(--ink)] border-[var(--line)] hover:border-[var(--lamp)]'
@@ -387,6 +389,29 @@ export default function WelcomeModal({
                     {g.label}
                   </button>
                 ))}
+
+                {/* Custom Goal Input */}
+                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-2xl border transition-all ${
+                  !GOALS.some((g) => g.val === selectedGoal)
+                    ? 'border-[var(--lamp)] bg-[var(--lamp)]/15 ring-2 ring-[var(--lamp)]/30'
+                    : 'border-[var(--line)] bg-[var(--surf2)]'
+                }`}>
+                  <span className="text-xs text-[var(--mut)]">Custom:</span>
+                  <input
+                    type="number"
+                    min="0.25"
+                    max="18"
+                    step="0.5"
+                    placeholder="e.g. 7"
+                    value={!GOALS.some((g) => g.val === selectedGoal) ? selectedGoal : ''}
+                    onChange={(e) => {
+                      const v = parseFloat(e.target.value);
+                      if (!isNaN(v) && v > 0) setSelectedGoal(v);
+                    }}
+                    className="w-16 px-2 py-0.5 rounded-lg bg-[var(--surf)] border border-[var(--line)] text-xs font-bold text-[var(--lamp)] text-center outline-none focus:border-[var(--lamp)]"
+                  />
+                  <span className="text-xs text-[var(--ink)]">hrs</span>
+                </div>
               </div>
 
               {/* Ready Summary Card */}

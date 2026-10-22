@@ -1313,9 +1313,18 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
               <span className="text-[var(--mut)] uppercase tracking-wider text-[10px] flex items-center gap-1.5">
                 <span>⚡ Daily Goal Milestones</span>
               </span>
-              <span className="text-[11px] font-bold text-[var(--lamp)] tabular-nums">
-                {Math.round(progressPct * 100)}% ({fmtMinSec(todaySec)} / {todayGoal}h)
-              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedGoalDate(todayIso);
+                  setShowGoalModal(true);
+                }}
+                title="Change or customize daily study goal"
+                className="text-[11px] font-bold text-[var(--lamp)] hover:underline tabular-nums flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <span>{Math.round(progressPct * 100)}% ({fmtMinSec(todaySec)} / {todayGoal}h)</span>
+                <span className="text-[10px] opacity-80">✏️</span>
+              </button>
             </div>
 
             {/* 3 Interactive Star Cards */}

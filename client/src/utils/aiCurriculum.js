@@ -10,7 +10,7 @@ export function generateStudyPlan({
   userNotes = ''
 }) {
   const daysCount = Math.max(1, Math.min(60, parseInt(targetDays, 10) || 7));
-  const dailyHours = Math.max(0.5, Math.min(12, parseFloat(hoursPerDay) || 2));
+  const dailyHours = Math.max(0.25, Math.min(18, parseFloat(hoursPerDay) || 2));
   const dailyMinutes = Math.round(dailyHours * 60);
 
   const cleanSubject = (subject || 'General Study').trim();
