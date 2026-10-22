@@ -8,7 +8,6 @@ import DayGoalModal from './DayGoalModal';
 import HabitTrackerModal from './HabitTrackerModal';
 import CustomSubjectModal from './CustomSubjectModal';
 import FeedbackModal from './FeedbackModal';
-import { DOMAINS } from './WelcomeModal';
 import { playSfx, setVolumeLevel } from '../utils/audio';
 import { triggerConfetti } from '../utils/confetti';
 import { getCurrentUser } from '../utils/api';
@@ -22,217 +21,6 @@ const SCENES = [
   { name: 'Autumn ridge', key: 'peak', palette: ['#5a2d3d', '#d9733f', '#f2b35c', '#ffe3a6', '#a65a3a', '#7d3f32', '#4f2a2a', '#33201f'] }
 ];
 
-const DAILY_CHALLENGES = [
-  // SWE & DSA
-  {
-    id: 'dsa_leetcode_medium',
-    domain: 'swe_dsa',
-    title: 'The LeetCode Medium Gauntlet',
-    desc: 'Solve 1 LeetCode Medium (or 2 Easy) problem. Analyze and write down both Time O(N) and Space O(1) complexity before submitting.',
-    reward: '+60 Dopamine XP',
-    tag: 'DSA Sprint',
-    icon: '💻'
-  },
-  {
-    id: 'dsa_tree_graph_drill',
-    domain: 'swe_dsa',
-    title: 'Tree & Graph Traversal Drill',
-    desc: 'Write a BFS, DFS, or Binary Tree Level Order traversal from scratch on a blank scratchpad without auto-complete or copying.',
-    reward: '+50 Dopamine XP',
-    tag: 'Core Algorithms',
-    icon: '🌳'
-  },
-  {
-    id: 'dsa_complexity_crusher',
-    domain: 'swe_dsa',
-    title: 'Complexity Crusher (O(N²) ➔ O(N))',
-    desc: 'Take a brute-force approach you previously wrote and optimize it down using a HashMap, Two Pointers, or Sliding Window pattern.',
-    reward: '+45 Dopamine XP',
-    tag: 'DSA Optimization',
-    icon: '⚡'
-  },
-  {
-    id: 'dsa_dp_recursion',
-    domain: 'swe_dsa',
-    title: 'Dynamic Programming Recurrence Attack',
-    desc: 'Draw out the state-transition table / recurrence formula for a DP problem (Memoization or 1D Tabulation) on paper before coding.',
-    reward: '+65 Dopamine XP',
-    tag: 'Advanced DSA',
-    icon: '🎯'
-  },
-  {
-    id: 'system_design_sketch',
-    domain: 'swe_dsa',
-    title: 'System Design Architecture Blueprint',
-    desc: 'Sketch a high-level system diagram for a backend service (Database choice, Caching layer, REST/GraphQL API contracts, Latency).',
-    reward: '+55 Dopamine XP',
-    tag: 'System Design',
-    icon: '🏗️'
-  },
-
-  // AI & ML
-  {
-    id: 'aiml_paper_breakdown',
-    domain: 'ai_ml',
-    title: 'ArXiv Paper Deep-Dive & Summary',
-    desc: 'Read one foundational ML/AI paper (or arxiv summary) for 30 minutes and document its core loss function and architecture diagram.',
-    reward: '+60 Dopamine XP',
-    tag: 'AI Research',
-    icon: '🤖'
-  },
-  {
-    id: 'aiml_loss_math_drill',
-    domain: 'ai_ml',
-    title: 'Loss Function & Backprop Math',
-    desc: 'Derive Cross-Entropy Loss or Mean Squared Error gradients by hand on paper to strengthen your fundamental intuition.',
-    reward: '+50 Dopamine XP',
-    tag: 'ML Math',
-    icon: '📐'
-  },
-  {
-    id: 'aiml_eda_pipeline',
-    domain: 'ai_ml',
-    title: 'Data Cleaning & Feature Engineering',
-    desc: 'Load a raw dataset, handle missing values, visualize distributions with Seaborn/Matplotlib, and build 2 novel engineered features.',
-    reward: '+55 Dopamine XP',
-    tag: 'Data Science',
-    icon: '📊'
-  },
-  {
-    id: 'aiml_model_eval',
-    domain: 'ai_ml',
-    title: 'Model Evaluation & Metric Audit',
-    desc: 'Calculate Precision, Recall, F1, and ROC-AUC for your classifier. Spot false positives and analyze failure edge cases.',
-    reward: '+50 Dopamine XP',
-    tag: 'Evaluation',
-    icon: '🔬'
-  },
-
-  // Full-Stack & Web Dev
-  {
-    id: 'web_ship_feature_pr',
-    domain: 'web_dev',
-    title: 'Ship a Production-Ready Feature',
-    desc: 'Build, test, and commit a working frontend UI component or backend endpoint with error boundaries and clean git history.',
-    reward: '+65 Dopamine XP',
-    tag: 'Full-Stack Ship',
-    icon: '🚀'
-  },
-  {
-    id: 'web_api_optimization',
-    domain: 'web_dev',
-    title: 'REST / GraphQL Contract & Indexing',
-    desc: 'Optimize an API route: add database indexing, validate incoming payloads with Zod/Joi, and return standardized error responses.',
-    reward: '+50 Dopamine XP',
-    tag: 'Backend Arch',
-    icon: '🔌'
-  },
-  {
-    id: 'web_responsive_polish',
-    domain: 'web_dev',
-    title: 'Mobile-First Responsive Polish',
-    desc: 'Test your application layout across 3 viewports (360px, 768px, 1440px) and eliminate layout shifts or awkward wrapping.',
-    reward: '+45 Dopamine XP',
-    tag: 'Frontend Polish',
-    icon: '📱'
-  },
-  {
-    id: 'web_refactor_cleanup',
-    domain: 'web_dev',
-    title: 'Refactor Spaghetti to Modular Hooks',
-    desc: 'Extract bloated component logic into clean custom hooks, separate presentation from state, and delete dead code.',
-    reward: '+50 Dopamine XP',
-    tag: 'Code Cleanliness',
-    icon: '📦'
-  },
-
-  // Academics & Exams
-  {
-    id: 'acad_active_recall_feynman',
-    domain: 'academics',
-    title: 'Feynman Technique & Active Recall',
-    desc: 'Pick one tough academic concept or theorem, close your notes, and explain it in plain simple words as if teaching a beginner.',
-    reward: '+55 Dopamine XP',
-    tag: 'Active Recall',
-    icon: '📚'
-  },
-  {
-    id: 'acad_past_paper_drill',
-    domain: 'academics',
-    title: 'Timed Past-Paper Question Sprint',
-    desc: 'Solve 3 previous-year exam problems or university problem sets strictly under exam time constraints with no textbook peeking.',
-    reward: '+60 Dopamine XP',
-    tag: 'Exam Sprint',
-    icon: '⏱️'
-  },
-  {
-    id: 'acad_formula_mindmap',
-    domain: 'academics',
-    title: 'Formula Derivation & Mindmap',
-    desc: 'Construct a single-page visual cheat sheet or formula mindmap connecting key theorems for your upcoming exams.',
-    reward: '+45 Dopamine XP',
-    tag: 'Synthesis',
-    icon: '🧠'
-  },
-
-  // UI/UX Design & Product
-  {
-    id: 'uiux_component_audit',
-    domain: 'ui_ux',
-    title: 'Figma Auto-Layout & Design System Audit',
-    desc: 'Create or audit 3 scalable UI components in Figma using auto-layout, consistent spacing tokens, and variant properties.',
-    reward: '+55 Dopamine XP',
-    tag: 'Design System',
-    icon: '🎨'
-  },
-  {
-    id: 'uiux_micro_interaction',
-    domain: 'ui_ux',
-    title: 'Micro-Interaction & Motion Design',
-    desc: 'Prototype a delightful button state, skeleton loading transition, or spring animation in Framer Motion or Figma smart animate.',
-    reward: '+50 Dopamine XP',
-    tag: 'Motion & UX',
-    icon: '✨'
-  },
-  {
-    id: 'uiux_heuristic_evaluation',
-    domain: 'ui_ux',
-    title: 'Heuristic Teardown & Case Study',
-    desc: 'Critique a popular web app against Nielsen Norman usability heuristics and sketch 2 high-impact UX improvements.',
-    reward: '+50 Dopamine XP',
-    tag: 'Product UX',
-    icon: '🔍'
-  },
-
-  // Job Search & Career
-  {
-    id: 'job_resume_metric_bullet',
-    domain: 'job_hunt',
-    title: 'Resume Metric Polish (Action + Impact)',
-    desc: 'Rewrite 3 resume bullet points using the Google XYZ formula: "Accomplished [X] as measured by [Y] by doing [Z]".',
-    reward: '+50 Dopamine XP',
-    tag: 'Resume Polish',
-    icon: '💼'
-  },
-  {
-    id: 'job_mock_interview_voice',
-    domain: 'job_hunt',
-    title: 'Behavioral STAR Story Drill',
-    desc: 'Record yourself answering "Tell me about a time you resolved a conflict or technical roadblock" using the STAR framework.',
-    reward: '+55 Dopamine XP',
-    tag: 'Interview Prep',
-    icon: '🎙️'
-  },
-  {
-    id: 'job_cold_outreach_portfolio',
-    domain: 'job_hunt',
-    title: 'Cold Outreach & Portfolio Touchup',
-    desc: 'Send 2 personalized LinkedIn/email coffee chat notes to engineers/managers and add a live demo link to your top project.',
-    reward: '+60 Dopamine XP',
-    tag: 'Career Outreach',
-    icon: '📬'
-  }
-];
 
 export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpenTutorial }) {
   const [now, setNow] = useState(new Date());
@@ -368,87 +156,6 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
     return { text: '🎯 Getting Started', color: 'text-[var(--mut)]' };
   }, [monthStats.completionRate]);
 
-  // Domain selection and tailored Daily Dopamine Quest logic
-  const [showDomainModal, setShowDomainModal] = useState(false);
-  const currentDomainId = state.userDomain || 'swe_dsa';
-  const currentDomain = DOMAINS.find((d) => d.id === currentDomainId) || DOMAINS[0];
-
-  const domainChallenges = useMemo(() => {
-    const list = DAILY_CHALLENGES.filter((c) => c.domain === currentDomainId);
-    return list.length > 0 ? list : DAILY_CHALLENGES;
-  }, [currentDomainId]);
-
-  const defaultTodayChallenge = useMemo(() => {
-    const seed = `${todayIso}_${currentDomainId}`;
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-      hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-    }
-    return domainChallenges[hash % domainChallenges.length];
-  }, [todayIso, currentDomainId, domainChallenges]);
-
-  const activeChallengeData = useMemo(() => {
-    if (state.dailyChallenge && state.dailyChallenge.date === todayIso) {
-      const match = DAILY_CHALLENGES.find((c) => c.id === state.dailyChallenge.challengeId);
-      return {
-        challenge: match || defaultTodayChallenge,
-        completed: !!state.dailyChallenge.completed
-      };
-    }
-    return {
-      challenge: defaultTodayChallenge,
-      completed: false
-    };
-  }, [state.dailyChallenge, todayIso, defaultTodayChallenge]);
-
-  const handleCompleteDailyChallenge = () => {
-    triggerConfetti();
-    playSfx('celebrate', state.mute);
-    const newXp = (state.dopamineXp || 0) + 50;
-    showToast(`⚡ Quest Complete! ${activeChallengeData.challenge.reward} unlocked! (Total: ${newXp} XP)`);
-
-    onUpdateState({
-      ...state,
-      dopamineXp: newXp,
-      dailyChallenge: {
-        date: todayIso,
-        challengeId: activeChallengeData.challenge.id,
-        completed: true,
-        completedAt: new Date().toISOString()
-      }
-    });
-  };
-
-  const handleRerollDailyChallenge = () => {
-    playSfx('click', state.mute);
-    const otherChallenges = domainChallenges.filter((c) => c.id !== activeChallengeData.challenge.id);
-    const pool = otherChallenges.length > 0 ? otherChallenges : domainChallenges;
-    const nextChallenge = pool[Math.floor(Math.random() * pool.length)];
-
-    showToast(`🎲 Rerolled Mission: "${nextChallenge.title}"`);
-    onUpdateState({
-      ...state,
-      dailyChallenge: {
-        date: todayIso,
-        challengeId: nextChallenge.id,
-        completed: false,
-        completedAt: null
-      }
-    });
-  };
-
-  const handleSelectDomain = (domainId) => {
-    playSfx('click', state.mute);
-    onUpdateState({
-      ...state,
-      userDomain: domainId,
-      dailyChallenge: state.dailyChallenge && state.dailyChallenge.completed ? state.dailyChallenge : null
-    });
-    setShowDomainModal(false);
-    const dom = DOMAINS.find((d) => d.id === domainId);
-    showToast(`🎯 Focus Domain switched to: ${dom ? dom.name : domainId}`);
-  };
-
   // Timezone & Environmental Atmospheric Theme Engine
   const userTimezone = useMemo(() => {
     try {
@@ -535,6 +242,79 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
   const ringOffset = 678.6 * (1 - progressPct);
 
   const isPetAwake = timerRunning || progressPct >= 1;
+
+  // Daily Focus Hours Goal Challenge (Motivates user to complete today's focus hours target)
+  const goalChallengeInfo = useMemo(() => {
+    const isGoalAchieved = todaySec >= todayGoalSec && todayGoalSec > 0;
+    const isClaimed = Boolean(
+      state.dailyChallenge &&
+      state.dailyChallenge.date === todayIso &&
+      state.dailyChallenge.completed
+    );
+    const pct = Math.min(100, Math.round((todaySec / (todayGoalSec || 1)) * 100));
+    const loggedHours = (todaySec / 3600).toFixed(1);
+    const remainingSec = Math.max(0, todayGoalSec - todaySec);
+    const remMinutes = Math.ceil(remainingSec / 60);
+    const remHours = (remainingSec / 3600).toFixed(1);
+
+    let statusMessage = '';
+    let motivationTip = '';
+    let icon = '🎯';
+
+    if (isGoalAchieved) {
+      icon = '🎉';
+      statusMessage = `Goal Crushed! You logged ${loggedHours}h of deep focus today (${pct}% of your ${todayGoal}h target)!`;
+      motivationTip = isClaimed
+        ? 'You earned +50 XP today! Keep stacking focus hours or call it a day.'
+        : 'You conquered today’s challenge! Claim your +50 Dopamine XP reward below.';
+    } else if (pct >= 75) {
+      icon = '🔥';
+      statusMessage = `Final stretch! You're at ${pct}% (${loggedHours}h / ${todayGoal}h).`;
+      motivationTip = `Only ${remMinutes} minute${remMinutes === 1 ? '' : 's'} (${remHours}h) left to complete today's challenge. Push through and close it out!`;
+    } else if (pct >= 50) {
+      icon = '⚡';
+      statusMessage = `Halfway mark passed! You're at ${pct}% (${loggedHours}h / ${todayGoal}h).`;
+      motivationTip = `Momentum is on your side. Another ${remMinutes} minutes and you'll clear today's hours challenge!`;
+    } else if (pct > 0) {
+      icon = '🌱';
+      statusMessage = `Underway! You've logged ${loggedHours}h of your ${todayGoal}h goal (${pct}%).`;
+      motivationTip = `Starting is the hardest part. Stay in flow — ${remMinutes} minutes remaining to conquer today's challenge!`;
+    } else {
+      icon = '🎯';
+      statusMessage = `Today's Challenge: Hit your ${todayGoal}h focus goal!`;
+      motivationTip = `No focus time logged yet today. Fire up a session, put distractions away, and let's make progress!`;
+    }
+
+    return {
+      isGoalAchieved,
+      isClaimed,
+      pct,
+      loggedHours,
+      remMinutes,
+      remHours,
+      statusMessage,
+      motivationTip,
+      icon
+    };
+  }, [todaySec, todayGoalSec, todayGoal, state.dailyChallenge, todayIso]);
+
+  const handleCompleteDailyChallenge = () => {
+    triggerConfetti();
+    playSfx('celebrate', state.mute);
+    const newXp = (state.dopamineXp || 0) + 50;
+    showToast(`⚡ Daily Challenge Complete! +50 Dopamine XP unlocked! (Total: ${newXp} XP)`);
+
+    onUpdateState({
+      ...state,
+      dopamineXp: newXp,
+      dailyChallenge: {
+        date: todayIso,
+        challengeId: 'hours_goal_' + todayGoal,
+        completed: true,
+        completedAt: new Date().toISOString()
+      }
+    });
+  };
 
   // -------------------------------------------------------------
   // Anti-Derailment Streak Shield (Mending Mode) Calculation
@@ -1738,60 +1518,34 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
         )}
       </section>
 
-      {/* Daily Dopamine Study Quest (Daily Challenge) */}
+      {/* Daily Focus Hours Goal Challenge */}
       <section className="relative overflow-hidden rounded-[26px] border border-[var(--line)] bg-[var(--surf)] p-5 sm:p-6 mt-6 transition-all shadow-sm">
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-amber-500/10 via-[var(--lamp)]/5 to-transparent rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex items-start justify-between flex-wrap gap-3 mb-3">
           <div className="flex items-center gap-3">
             <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400/20 to-[var(--lamp)]/20 border border-amber-400/30 flex items-center justify-center text-2xl shadow-xs">
-              {activeChallengeData.challenge.icon}
+              {goalChallengeInfo.icon}
             </span>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                  ⚡ DAILY DOPAMINE QUEST
+                  ⚡ DAILY FOCUS CHALLENGE
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setShowDomainModal(true)}
-                  title="Click to switch your focus domain"
-                  className="text-[10px] font-bold px-2 py-0.5 rounded-md border flex items-center gap-1 cursor-pointer transition-transform hover:scale-105 active:scale-95 shadow-xs"
-                  style={{
-                    backgroundColor: `${currentDomain.color}20`,
-                    borderColor: `${currentDomain.color}60`,
-                    color: currentDomain.color
-                  }}
-                >
-                  <span>{currentDomain.icon}</span>
-                  <span>{currentDomain.shortName}</span>
-                  <span className="text-[9px] opacity-75">▾</span>
-                </button>
                 <span className="text-[10px] font-semibold text-[var(--mut)] px-2 py-0.5 rounded-md bg-[var(--surf2)] border border-[var(--line)]">
-                  {activeChallengeData.challenge.tag}
+                  {todayGoal}h Target
                 </span>
                 <span className="text-[10px] font-bold text-emerald-400 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
-                  {activeChallengeData.challenge.reward}
+                  +50 Dopamine XP
                 </span>
               </div>
               <h3 className="serif text-lg sm:text-xl font-normal text-[var(--ink)] mt-1">
-                {activeChallengeData.challenge.title}
+                Complete Your {todayGoal}h Focus Goal Today
               </h3>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {!activeChallengeData.completed && (
-              <button
-                type="button"
-                onClick={handleRerollDailyChallenge}
-                className="px-3 py-1.5 rounded-xl border border-[var(--line)] bg-[var(--surf2)] hover:border-[var(--lamp)] text-xs font-semibold text-[var(--ink)] cursor-pointer transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95 shadow-xs"
-                title="Reroll for a different challenge today"
-              >
-                <span>🎲</span>
-                <span>Reroll Quest</span>
-              </button>
-            )}
             <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-[var(--surf2)] border border-[var(--line)] text-[var(--lamp)] flex items-center gap-1">
               <span>⚡</span>
               <span>{state.dopamineXp || 0} XP</span>
@@ -1799,37 +1553,69 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
           </div>
         </div>
 
+        {/* Live Progress Bar toward Today's Goal */}
+        <div className="my-3 p-3 rounded-2xl bg-[var(--surf2)]/50 border border-[var(--line)]/60">
+          <div className="flex items-center justify-between text-xs mb-1.5 flex-wrap gap-1">
+            <span className="font-semibold text-[var(--ink)] flex items-center gap-1.5">
+              <span>{goalChallengeInfo.statusMessage}</span>
+            </span>
+            <span className="font-bold text-[var(--lamp)] tabular-nums">
+              {goalChallengeInfo.loggedHours}h / {todayGoal}h ({goalChallengeInfo.pct}%)
+            </span>
+          </div>
+          <div className="w-full h-3 rounded-full bg-[var(--surf)] border border-[var(--line)] overflow-hidden p-0.5">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-amber-400 via-[var(--lamp)] to-emerald-400 transition-all duration-500 shadow-sm"
+              style={{ width: `${goalChallengeInfo.pct}%` }}
+            />
+          </div>
+        </div>
+
         <p className="text-xs sm:text-sm text-[var(--mut)] mb-4 max-w-2xl leading-relaxed">
-          {activeChallengeData.challenge.desc}
+          {goalChallengeInfo.motivationTip}
         </p>
 
         <div className="flex items-center justify-between flex-wrap gap-3 pt-3 border-t border-[var(--line)]/60">
           <div className="flex items-center gap-2 text-xs text-[var(--mut)]">
             <span>Status:</span>
-            {activeChallengeData.completed ? (
+            {goalChallengeInfo.isClaimed ? (
               <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold">
-                <span>✓ Quest Completed for today!</span>
-                <span className="text-[10px] opacity-75">(Dopamine bonus claimed)</span>
+                <span>✓ Challenge Completed & XP Claimed!</span>
+              </span>
+            ) : goalChallengeInfo.isGoalAchieved ? (
+              <span className="inline-flex items-center gap-1 text-emerald-400 font-semibold animate-pulse">
+                <span>🎉 Hours target conquered! Claim your +50 XP reward!</span>
               </span>
             ) : (
-              <span className="text-amber-400 font-medium">In Progress — complete the mission to claim XP!</span>
+              <span className="text-amber-400 font-medium">
+                {goalChallengeInfo.remMinutes}m focus remaining to unlock XP reward
+              </span>
             )}
           </div>
 
-          <div>
-            {activeChallengeData.completed ? (
+          <div className="flex items-center gap-2">
+            {goalChallengeInfo.isClaimed ? (
               <div className="px-4 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-1.5 shadow-xs">
                 <span>🌟</span>
-                <span>Mission Cleared (+50 XP)</span>
+                <span>Challenge Cleared (+50 XP)</span>
               </div>
-            ) : (
+            ) : goalChallengeInfo.isGoalAchieved ? (
               <button
                 type="button"
                 onClick={handleCompleteDailyChallenge}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-[var(--lamp)] to-emerald-400 text-[#1b1730] text-xs font-bold shadow-md hover:brightness-110 active:scale-95 cursor-pointer transition-all flex items-center gap-1.5"
+                className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 via-[var(--lamp)] to-emerald-400 text-[#1b1730] text-xs font-bold shadow-md hover:brightness-110 active:scale-95 cursor-pointer transition-all flex items-center gap-1.5 animate-bounce"
               >
                 <span>⚡</span>
-                <span>Complete Quest & Claim XP</span>
+                <span>Claim +50 XP Reward!</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => startTimer()}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/20 to-[var(--lamp)]/20 border border-[var(--lamp)]/40 text-[var(--lamp)] hover:bg-[var(--lamp)] hover:text-[#1b1730] text-xs font-bold shadow-xs hover:brightness-110 active:scale-95 cursor-pointer transition-all flex items-center gap-1.5"
+              >
+                <span>⏱️</span>
+                <span>Start Focus Session</span>
               </button>
             )}
           </div>
@@ -2124,68 +1910,6 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
             >
               Resume focus
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Domain Switch Modal */}
-      {showDomainModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-lg rounded-3xl bg-[var(--surf)] border border-[var(--line)] p-6 shadow-2xl relative">
-            <button
-              type="button"
-              onClick={() => setShowDomainModal(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[var(--surf2)] text-[var(--mut)] hover:text-[var(--ink)] flex items-center justify-center cursor-pointer text-sm"
-            >
-              ✕
-            </button>
-
-            <div className="flex items-center gap-3 mb-2">
-              <span className="text-2xl">🎯</span>
-              <div>
-                <h3 className="serif text-xl font-medium text-[var(--ink)]">Change Your Focus Domain</h3>
-                <p className="text-xs text-[var(--mut)]">Tailors your daily dopamine study missions & challenges</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 my-4">
-              {DOMAINS.map((domain) => {
-                const isSelected = currentDomainId === domain.id;
-                return (
-                  <button
-                    key={domain.id}
-                    type="button"
-                    onClick={() => handleSelectDomain(domain.id)}
-                    className={`p-3 rounded-2xl border text-left cursor-pointer transition-all flex flex-col justify-between ${
-                      isSelected
-                        ? 'border-[var(--lamp)] bg-[var(--lamp)]/10 shadow-sm ring-1 ring-[var(--lamp)]/40'
-                        : 'border-[var(--line)] bg-[var(--surf2)]/70 hover:border-[var(--mut)]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-2xl">{domain.icon}</span>
-                      {domain.badge && (
-                        <span className="text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded bg-[var(--surf)] text-[var(--mut)] border border-[var(--line)]">
-                          {domain.badge}
-                        </span>
-                      )}
-                    </div>
-                    <div className="font-semibold text-xs text-[var(--ink)]">{domain.name}</div>
-                    <div className="text-[10px] text-[var(--mut)] line-clamp-2 mt-0.5">{domain.desc}</div>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={() => setShowDomainModal(false)}
-                className="px-4 py-1.5 rounded-xl text-xs font-semibold bg-[var(--surf2)] text-[var(--ink)] hover:brightness-110 cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
           </div>
         </div>
       )}
