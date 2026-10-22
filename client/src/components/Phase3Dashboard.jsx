@@ -8,6 +8,7 @@ import DayGoalModal from './DayGoalModal';
 import HabitTrackerModal from './HabitTrackerModal';
 import CustomSubjectModal from './CustomSubjectModal';
 import FeedbackModal from './FeedbackModal';
+import ShareReportModal from './ShareReportModal';
 import { playSfx, setVolumeLevel } from '../utils/audio';
 import { triggerConfetti } from '../utils/confetti';
 import { getCurrentUser } from '../utils/api';
@@ -160,7 +161,29 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
   const [chartView, setChartView] = useState('total'); // 'total' | 'subjects'
   const [bouncingHabitId, setBouncingHabitId] = useState(null);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [adminStats, setAdminStats] = useState(null);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState(null);
+
+  // Listen for PWA Install Prompt
+  useEffect(() => {
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();
+      setDeferredInstallPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredInstallPrompt) return;
+    deferredInstallPrompt.prompt();
+    const { outcome } = await deferredInstallPrompt.userChoice;
+    if (outcome === 'accepted') {
+      showToast('🎉 CONSIStracker app installed!');
+    }
+    setDeferredInstallPrompt(null);
+  };
 
   useEffect(() => {
     if (currentUser?.username?.toLowerCase() === 'admin') {
@@ -852,6 +875,32 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
             >
               ◐
             </button>
+
+            <span className="w-px h-3 bg-[var(--line)] mx-0.5 opacity-60" />
+
+            {/* Share Focus Card Modal Trigger */}
+            <button
+              type="button"
+              onClick={() => setShowShareModal(true)}
+              title="Generate & Share Daily Focus Card"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border border-amber-500/35 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25 transition-all cursor-pointer shadow-xs active:scale-95"
+            >
+              <span>🏆</span>
+              <span className="hidden sm:inline">Share</span>
+            </button>
+
+            {/* PWA Install App Trigger (when installable) */}
+            {deferredInstallPrompt && (
+              <button
+                type="button"
+                onClick={handleInstallApp}
+                title="Install CONSIStracker as Desktop/Mobile App"
+                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold border border-emerald-500/40 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 transition-all cursor-pointer shadow-xs animate-pulse"
+              >
+                <span>📲</span>
+                <span className="hidden sm:inline">Install</span>
+              </button>
+            )}
           </div>
 
           {/* Bottom Primary Tier: Core Interactive Action Pills */}
@@ -2017,6 +2066,21 @@ export default function Phase3Dashboard({ state, onUpdateState, onLogout, onOpen
         onClose={() => setShowFeedbackModal(false)}
         showToast={showToast}
         isMuted={state.mute}
+      />
+
+      {/* Daily Focus Share Card Modal */}
+      <ShareReportModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        currentUser={currentUser}
+        todaySec={todaySec}
+        todayGoal={todayGoal}
+        rawStreak={rawStreak}
+        isShieldActive={isShieldActive}
+        habits={habits}
+        todayIso={todayIso}
+        claimedMilestones={claimedMilestones}
+        showToast={showToast}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { playSfx } from '../utils/audio';
+import { playSfx, startAmbient, stopAmbient, setAmbientVolume, getAmbientState } from '../utils/audio';
 
 const SARCASTIC_TAB_ROASTS = [
   (mins) => `Away for ${mins}m? Let me guess, "essential research" on YouTube?`,
@@ -34,6 +34,30 @@ export default function TimerOverlay({
   // False Reading / Time Sanity Check State
   const [showSanityCheck, setShowSanityCheck] = useState(false);
   const [customTrimMin, setCustomTrimMin] = useState(25);
+
+  // Ambient Soundscape State
+  const [ambientType, setAmbientType] = useState('off');
+
+  // Sync ambient sound with timer open/paused state
+  useEffect(() => {
+    if (isOpen && !isPaused && ambientType !== 'off') {
+      startAmbient(ambientType, isMuted);
+    } else {
+      stopAmbient();
+    }
+    return () => {
+      stopAmbient();
+    };
+  }, [isOpen, isPaused, ambientType, isMuted]);
+
+  const handleAmbientToggle = (type) => {
+    setAmbientType(type);
+    if (type === 'off') {
+      stopAmbient();
+    } else if (isOpen && !isPaused) {
+      startAmbient(type, isMuted);
+    }
+  };
 
   const fmt = (t) => {
     t = Math.floor(Math.max(0, t));
@@ -257,6 +281,39 @@ export default function TimerOverlay({
             : isTargetCompleted
             ? '🔥 Target reached! Bonus momentum unlocked.'
             : ''}
+        </div>
+      </div>
+
+      {/* Ambient Soundscape Dock */}
+      <div className="flex flex-col items-center gap-2 mb-6">
+        <div className="flex items-center gap-1.5 p-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md shadow-lg flex-wrap justify-center">
+          <span className="text-[11px] text-gray-400 font-medium px-2 flex items-center gap-1">
+            <span>🎧</span>
+            <span className="hidden sm:inline">Soundscape:</span>
+          </span>
+          {[
+            { id: 'off', label: 'Off', icon: '🔇' },
+            { id: 'brown', label: 'Brown Noise', icon: '☕' },
+            { id: 'rain', label: 'Rain', icon: '🌧️' },
+            { id: 'drone', label: '432Hz Drone', icon: '🧘' }
+          ].map((amb) => {
+            const isSelected = ambientType === amb.id;
+            return (
+              <button
+                key={amb.id}
+                type="button"
+                onClick={() => handleAmbientToggle(amb.id)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isSelected
+                    ? 'bg-[var(--lamp)] text-[#1b1730] font-bold shadow-md scale-105'
+                    : 'text-gray-300 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <span>{amb.icon}</span>
+                <span>{amb.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

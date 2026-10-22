@@ -1,0 +1,26 @@
+{
+  "name": "CONSIStracker — Deep Work & Habit Tracker",
+  "short_name": "CONSIStracker",
+  "description": "Minimalist deep work focus timer, anti-procrastination engine, and daily habit consistency tracker.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#1b1730",
+  "theme_color": "#1b1730",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/diano.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["productivity", "education", "utilities"]
+}
